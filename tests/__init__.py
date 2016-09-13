@@ -137,28 +137,6 @@ class TestApi(unittest.TestCase):
 
 
 class TestThreeJSExporter(unittest.TestCase):
-    def test_UuidBuilder(self):
-        b = UuidBuilder()
-        self.assertEqual(b('SomeString'), b('SomeString'))
-        self.assertEqual(b('SomeString'), b('SomeString').upper())
-        self.assertNotEqual(b(), b())
-
-    def test_flat_list(self):
-        l = [
-            [
-                [1, 2, 3],
-                [range(4, 6+1), range(7, 9+1)]
-            ],
-            [
-                {
-                    (10, 11, 12): 'dummy',
-                    13: 'dummy'
-                }
-            ]
-        ]
-        self.assertListEqual(flat_list(l),
-                             [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13])
-
     @scene('test_exporter.blend')
     @mkdtemp
     def test_export(self, tmpdir, scenepath):

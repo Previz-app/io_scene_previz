@@ -1,84 +1,17 @@
-import collections
 import itertools
-import json
 import pathlib
-import uuid
 
 import bpy
 import bpy_extras.io_utils
 import mathutils
 
+import previz
+from previz import export
+
 from . import __name__ as generator
 
 
 AXIS_CONVERSION = bpy_extras.io_utils.axis_conversion(to_forward='Z', to_up='Y').to_4x4()
-
-
-class UuidBuilder(object):
-    def __init__(self, dns = 'previz.online'):
-        self.namespace = uuid.uuid5(uuid.NAMESPACE_DNS, dns)
-
-    def __call__(self, name = None):
-        return str(self.uuid(name)).upper()
-
-    def uuid(self, name):
-        if name is None:
-            return uuid.uuid4()
-        return uuid.uuid5(self.namespace, name)
-
-
-buildUuid = UuidBuilder()
-
-def flat_list(iterable):
-    def flatten(values):
-        try:
-            for value in values:
-                for iterated in flatten(value):
-                    yield iterated
-        except TypeError:
-            yield values
-
-    return list(flatten(iterable))
-
-
-def build_metadata(scene):
-    return {
-        'version': 4.4,
-        'type': 'Object',
-        'generator': scene.generator,
-        'sourceFile': scene.source_file
-    }
-
-
-def build_scene_root(scene, children):
-    return {
-        'type': 'Scene',
-        'matrix': [
-            1.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            1.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            1.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            1.0
-        ],
-        'uuid': buildUuid(),
-        'children': children,
-        'background': scene.background_color
-    }
-
-
-def uvs_iterator(uvset):
-    return (d.uv for d in uvset.data)
 
 
 class ThreeJSFaceBuilder(object):
@@ -104,70 +37,8 @@ class ThreeJSFaceBuilder(object):
         return (int(is_quad) << 0) + (int(has_uvsets) << 3 )
 
 
-def build_geometry(scene, mesh):
-    return {
-        'data': {
-            'metadata': {
-                'version': 3,
-                'generator': scene.generator,
-            },
-            'name': mesh.geometry_name,
-            'faces': flat_list(mesh.faces),
-            'uvs': [flat_list(uvset) for uvset in mesh.uvsets],
-            'vertices': flat_list(mesh.vertices)
-        },
-        'uuid': buildUuid(),
-        'type': 'Geometry'
-    }
-
-
-def build_object(mesh, geometry_uuid):
-    return {
-        'name': mesh.name,
-        'uuid': buildUuid(),
-        'matrix': flat_list(mesh.world_matrix),
-        'visible': True,
-        'type': 'Mesh',
-        'geometry': geometry_uuid
-    }
-
-
-def build_objects(scene):
-    objects = []
-    geometries = []
-    
-    for mesh in scene.objects:
-        geometry = build_geometry(scene, mesh)
-        object = build_object(mesh, geometry['uuid'])
-        
-        objects.append(object)
-        geometries.append(geometry)
-
-    return build_scene_root(scene, objects), geometries
-
-
-def build_three_js_scene(scene):
-    ret = {}
-
-    scene_root, geometries = build_objects(scene)
-
-    return {
-
-        'animations': [],
-        'geometries': geometries,
-        'images': [],
-        'materials': [],
-        'metadata': build_metadata(scene),
-        'object': scene_root,
-        'textures': []
-    }
-
-
-def export(scene, fp):
-    scene = build_three_js_scene(scene)
-    json.dump(scene, fp, indent=1, sort_keys=True)
-
-
+def uvs_iterator(uvset):
+    return (d.uv for d in uvset.data)
 
 
 def color2threejs(color):
@@ -187,12 +58,12 @@ def parse_mesh(blender_object):
     
     geometry_name, faces, vertices, uvsets = parse_geometry(blender_object.data)
     
-    return Mesh(name,
-                geometry_name,
-                world_matrix,
-                faces,
-                vertices,
-                uvsets)
+    return previz.Mesh(name,
+                       geometry_name,
+                       world_matrix,
+                       faces,
+                       vertices,
+                       uvsets)
 
 
 def parse_geometry(blender_geometry):
@@ -218,7 +89,6 @@ def exportable_objects(context):
     return (o for o in context.visible_objects if o.type == 'MESH')
 
 
-
 class Scene(object):
     def __init__(self, context):
         self.context = context
@@ -239,12 +109,3 @@ class Scene(object):
     def objects(self):
         for o in exportable_objects(self.context):
             yield parse_mesh(o)
-
-
-Mesh = collections.namedtuple('Mesh',
-                             ['name',
-                              'geometry_name',
-                              'world_matrix',
-                              'faces',
-                              'vertices',
-                              'uvsets'])
