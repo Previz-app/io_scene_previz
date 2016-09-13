@@ -89,23 +89,13 @@ def exportable_objects(context):
     return (o for o in context.visible_objects if o.type == 'MESH')
 
 
-class Scene(object):
-    def __init__(self, context):
-        self.context = context
-    
-    @property
-    def generator(self):
-        return generator
-    
-    @property
-    def source_file(self):
-        return pathlib.Path(bpy.data.filepath).name
+def build_objects(context):
+    for o in exportable_objects(context):
+        yield parse_mesh(o)
 
-    @property
-    def background_color(self):
-        return color2threejs(self.context.scene.world.horizon_color)
-    
-    @property
-    def objects(self):
-        for o in exportable_objects(self.context):
-            yield parse_mesh(o)
+
+def build_scene(context):
+    return previz.Scene(generator,
+                        pathlib.Path(bpy.data.filepath).name,
+                        color2threejs(context.scene.world.horizon_color),
+                        build_objects(context))
