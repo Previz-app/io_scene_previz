@@ -74,7 +74,6 @@ def parse_geometry(blender_geometry):
     vertices_count = len(g.vertices)
 
     uvsets_count = len(g.tessface_uv_textures)
-    uv_index = itertools.count()
     uvsets = (uvs_iterator(uvs) for uvs in g.tessface_uv_textures)
 
     three_js_face = ThreeJSFaceBuilder(uvsets_count)
