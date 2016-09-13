@@ -176,7 +176,7 @@ class TestThreeJSExporter(unittest.TestCase):
 
         export_path = tmpdir / 'test_export.json'
         with export_path.open('w') as fp:
-            export(bpy.context, fp)
+            export(Scene(bpy.context), fp)
 
         self.assertEqual(load(export_path),
                          load(scenepath.with_suffix('.json')))

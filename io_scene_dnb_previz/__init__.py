@@ -186,7 +186,7 @@ class ExportPreviz(utils.BackgroundTasksOperator):
     @staticmethod
     def task_export_three_js(g):
         with utils.ThreeJSExportPaths(g['tmpdir']).scene.open('w') as fp:
-            three_js_exporter.export(g['context'], fp)
+            three_js_exporter.export(three_js_exporter.Scene(g['context']), fp)
         return g
 
     @staticmethod
