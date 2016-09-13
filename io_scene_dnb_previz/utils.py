@@ -7,6 +7,7 @@ import bpy
 from bpy.props import BoolProperty
 
 
+
 class PrevizProject(object):
     endpoints_masks = {
         'projects': '{root}/projects',
@@ -17,13 +18,10 @@ class PrevizProject(object):
         'state':    '{root}/projects/{project_id:d}/state',
     }
 
-    def __init__(self, token, project_id = None, root='https://previz.online/api'):
+    def __init__(self, root, token, project_id = None):
+        self.root = root
         self.token = token
-
-        self.url_elems={
-            'root': root,
-            'project_id': project_id
-        }
+        self.project_id = project_id
 
     def request(self, *args, **kwargs):
         return requests.request(*args,
@@ -75,6 +73,13 @@ class PrevizProject(object):
         url_elems.update(self.url_elems)
         return self.endpoints_masks[mask_name].format(**url_elems)
 
+    @property
+    def url_elems(self):
+        return {
+            'root': self.root,
+            'project_id': self.project_id,
+        }
+    
     @property
     def headers(self):
         return {'Authorization': 'Bearer {}'.format(self.token)}

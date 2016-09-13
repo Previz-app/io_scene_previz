@@ -17,6 +17,7 @@ BLENDS_DIR_NAME = 'blends'
 DUMMY_UNITTEST_PROJECT_ID = 1
 DUMMY_UNITTEST_PROJECT_NAME = '*Unittest dummy project*'
 
+PREVIZ_API_ROOT_ENVVAR = 'PREVIZ_API_ROOT'
 PREVIZ_API_TOKEN_ENVVAR = 'PREVIZ_API_TOKEN'
 
 
@@ -60,6 +61,7 @@ def scene(name):
 
             # Set API token
             prefs = bpy.context.user_preferences.addons[io_scene_dnb_previz.__name__].preferences
+            prefs.api_root = os.environ[PREVIZ_API_ROOT_ENVVAR]
             prefs.api_token = os.environ[PREVIZ_API_TOKEN_ENVVAR]
 
             # Set dummy Previz project
@@ -118,8 +120,12 @@ def run_previz_exporter(
         debug_run_api_requests=False,
         debug_run_modal=False,
         project_id=None):
+    
+    api_root, api_token = io_scene_dnb_previz.previz_preferences(bpy.context)
+    
     kwargs = {
-        'api_token': bpy.context.user_preferences.addons[io_scene_dnb_previz.__name__].preferences.api_token,
+        'api_root': api_root,
+        'api_token': api_token,
         'debug_run_api_requests': debug_run_api_requests,
         'debug_cleanup': debug_cleanup,
         'debug_run_modal': debug_run_modal
@@ -136,20 +142,20 @@ def run_previz_exporter(
 
 
 def run_create_project(project_name):
-    api_token = bpy.context.user_preferences.addons[io_scene_dnb_previz.__name__].preferences.api_token
-    bpy.ops.export_scene.previz_new_project(api_token=api_token, project_name=project_name)
+    api_root, api_token = io_scene_dnb_previz.previz_preferences(bpy.context)
+    bpy.ops.export_scene.previz_new_project(api_root=api_root, api_token=api_token, project_name=project_name)
 
-    return max(PrevizProject(api_token).projects(), key=lambda p: p['id'])['id']
+    return max(PrevizProject(api_root, api_token).projects(), key=lambda p: p['id'])['id']
 
 
 def delete_project(project_id):
-    api_token = bpy.context.user_preferences.addons[io_scene_dnb_previz.__name__].preferences.api_token
-    PrevizProject(api_token, project_id).delete_project()
+    api_root, api_token = io_scene_dnb_previz.previz_preferences(bpy.context)
+    PrevizProject(api_root, api_token, project_id).delete_project()
 
 
 def set_project_state(project_id, state):
-    api_token = bpy.context.user_preferences.addons[io_scene_dnb_previz.__name__].preferences.api_token
-    PrevizProject(api_token, project_id).set_state(state)
+    api_root, api_token = io_scene_dnb_previz.previz_preferences(bpy.context)
+    PrevizProject(api_root, api_token, project_id).set_state(state)
 
 
 def random_project_name():

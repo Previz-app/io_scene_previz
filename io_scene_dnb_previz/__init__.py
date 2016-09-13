@@ -26,6 +26,11 @@ bl_info = {
 TEMPORARY_DIRECTORY_PREFIX = 'blender-{}-'.format(__name__)
 
 
+def previz_preferences(context):
+    prefs = context.user_preferences.addons[__name__].preferences
+    return prefs.api_root, prefs.api_token
+
+
 ###################
 # Debugging tools #
 ###################
@@ -72,6 +77,10 @@ class ExportPreviz(utils.BackgroundTasksOperator):
 
     debug_run_modal = utils.BackgroundTasksOperator.debug_run_modal
 
+    api_root = StringProperty(
+        name='API root'
+    )
+
     api_token = StringProperty(
         name='API token'
     )
@@ -107,10 +116,12 @@ class ExportPreviz(utils.BackgroundTasksOperator):
 
     @classmethod
     def poll(cls, context):
-        api_token_is_valid = len(context.user_preferences.addons[__name__].preferences.api_token) > 0
+        api_root, api_token = previz_preferences(context)
+        api_root_is_valid = len(api_root) > 0
+        api_token_is_valid = len(api_token) > 0
         previz_project_is_valid = context.scene.previz_project_id >=0
 
-        return api_token_is_valid and previz_project_is_valid
+        return api_root_is_valid and api_token_is_valid and previz_project_is_valid
 
     def build_tasks(self, context):
         tasks = [
@@ -222,6 +233,10 @@ class ExportPreviz(utils.BackgroundTasksOperator):
 
     @log_execute
     def execute(self, context):
+        if len(self.api_root) == 0 :
+            self.report({'ERROR_INVALID_INPUT'}, 'No Previz API root specified')
+            return {'CANCELLED'}
+        
         if len(self.api_token) == 0 :
             self.report({'ERROR_INVALID_INPUT'}, 'No Previz API token specified')
             return {'CANCELLED'}
@@ -231,13 +246,15 @@ class ExportPreviz(utils.BackgroundTasksOperator):
             return {'CANCELLED'}
 
         self.g['property_tmpdir'] = self.debug_tmpdir
-        self.g['project'] = utils.PrevizProject(self.api_token, self.project_id)
+        self.g['project'] = utils.PrevizProject(self.api_root,
+                                                self.api_token,
+                                                self.project_id)
 
         return super(ExportPreviz, self).execute(context)
 
     @log_invoke
     def invoke(self, context, event):
-        self.api_token = context.user_preferences.addons[__name__].preferences.api_token
+        self.api_root, self.api_token = previz_preferences(context)
         self.project_id = context.scene.previz_project_id
 
         return self.execute(context)
@@ -246,6 +263,11 @@ class ExportPreviz(utils.BackgroundTasksOperator):
 class CreateProject(bpy.types.Operator):
     bl_idname = 'export_scene.previz_new_project'
     bl_label = 'New Previz project'
+    
+    api_root = StringProperty(
+        name='API root',
+        options={'HIDDEN'}
+    )
 
     api_token = StringProperty(
         name='API token',
@@ -258,18 +280,20 @@ class CreateProject(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        return len(context.user_preferences.addons[__name__].preferences.api_token) > 0
+        api_root, api_token = previz_preferences(context)
+        return len(api_root) > 0 and len(api_token) > 0
 
     @log_execute
     def execute(self, context):
-        project_data = utils.PrevizProject(self.api_token).new_project(self.project_name)
+        project_data = utils.PrevizProject(self.api_root,
+                                           self.api_token).new_project(self.project_name)
         context.scene.previz_project_name = project_data['title']
         context.scene.previz_project_id = project_data['id']
         return {'FINISHED'}
 
     @log_invoke
     def invoke(self, context, event):
-        self.api_token = context.user_preferences.addons[__name__].preferences.api_token
+        self.api_root, self.api_token = previz_preferences(context)
         return context.window_manager.invoke_props_dialog(self)
 
 
@@ -296,22 +320,26 @@ class UploadImage(utils.BackgroundTasksOperator):
     @classmethod
     def poll(cls, context):
         is_valid_image = hasattr(context.space_data, 'image') and not context.space_data.image.packed_file
-        api_token_is_valid = len(context.user_preferences.addons[__name__].preferences.api_token) > 0
+        
+        api_root, api_token = previz_preferences(context)
+        api_root_is_valid = len(api_root) > 0
+        api_token_is_valid = len(api_token) > 0
+        
         previz_project_is_valid = context.scene.previz_project_id >= 0
-
-        return is_valid_image and api_token_is_valid and previz_project_is_valid
+        
+        return is_valid_image and api_root_is_valid and api_token_is_valid and previz_project_is_valid
 
     def build_tasks(self, context):
         filepath = pathlib.Path(self.filepath)
         tasks = [
-            {'func': self.build_task_upload(self.api_token, self.project_id, filepath)},
+            {'func': self.build_task_upload(self.api_root, self.api_token, self.project_id, filepath)},
             {'func': self.build_task_done_message(filepath)},
         ]
         return tasks
 
-    def build_task_upload(self, api_token, project_id, filepath):
+    def build_task_upload(self, api_root, api_token, project_id, filepath):
         def task():
-            p = utils.PrevizProject(api_token, project_id)
+            p = utils.PrevizProject(api_root, api_token, project_id)
             p.upload_asset(filepath.open('rb'))
         return task
 
@@ -332,6 +360,10 @@ class UploadImage(utils.BackgroundTasksOperator):
 
     @log_execute
     def execute(self, context):
+        if len(self.api_root) == 0 :
+            self.report({'ERROR_INVALID_INPUT'}, 'No Previz API root specified')
+            return {'CANCELLED'}
+        
         if len(self.api_token) == 0 :
             self.report({'ERROR_INVALID_INPUT'}, 'No Previz API token specified')
             return {'CANCELLED'}
@@ -349,7 +381,7 @@ class UploadImage(utils.BackgroundTasksOperator):
 
     @log_invoke
     def invoke(self, context, event):
-        self.api_token = context.user_preferences.addons[__name__].preferences.api_token
+        self.api_root, self.api_token = previz_preferences(context)
         self.project_id = context.scene.previz_project_id
 
         image = context.space_data.image
@@ -362,20 +394,25 @@ class UploadImage(utils.BackgroundTasksOperator):
 class PrevizPreferences(bpy.types.AddonPreferences):
     bl_idname = __name__
 
-    api_token = ExportPreviz.api_token
+    api_root = StringProperty(
+        name='API root',
+        default='https://previz.online/api'
+    )
+
+    api_token = StringProperty(
+        name='API token'
+    )
 
     def draw(self, context):
         layout = self.layout
 
+        layout.prop(self, 'api_root')
+        
         row = layout.split(percentage=.9, align=False)
         row.prop(self, 'api_token')
-        link_to_token_page_button(row)
 
-
-def link_to_token_page_button(layout):
-    op = layout.operator('wm.url_open', text="Tokens", icon='URL')
-    op.url = 'https://previz.online/settings#/api'
-    return op
+        op = layout.operator('wm.url_open', text="Tokens", icon='URL')
+        op.url = 'https://previz.online/settings#/api'
 
 
 #########
@@ -406,8 +443,8 @@ class PrevizProjectsEnum(object):
         return dict((self.project_id_to_menu_id(id), (id, name)) for id, name in projects.items())
 
     @log_call
-    def refresh(self, api_token):
-        projects = utils.PrevizProject(api_token).projects()
+    def refresh(self, api_root, api_token):
+        projects = utils.PrevizProject(api_root, api_token).projects()
         self.__projects_from_api = dict((p['id'], p['title']) for p in projects)
 
     def projects(self, current_project_id, current_project_name):
@@ -469,13 +506,14 @@ class RefreshProjects(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        return len(context.user_preferences.addons[__name__].preferences.api_token) > 0
+        api_root, api_token = previz_preferences(context)
+        return len(api_root) > 0 and len(api_token) > 0
 
     @log_execute
     def execute(self, context):
-        api_token = context.user_preferences.addons[__name__].preferences.api_token
+        api_root, api_token = previz_preferences(context)
         previous_project = context.scene.previz_projects
-        projects_enum.refresh(api_token)
+        projects_enum.refresh(api_root, api_token)
         context.scene.previz_projects = previous_project
         return {'FINISHED'}
 
@@ -504,10 +542,10 @@ class PrevizPanel(bpy.types.Panel):
 
     @log_draw
     def draw(self, context):
-        api_token = context.user_preferences.addons[__name__].preferences.api_token
+        api_root, api_token = previz_preferences(context)
 
-        if len(api_token) == 0:
-            self.layout.label('Set an API key in the User Preferences.')
+        if len(api_root) == 0 or len(api_token) == 0:
+            self.layout.label('Set the API info in the User Preferences.')
             self.layout.label('Search Previz in the Add-ons tab.')
             self.layout.operator('screen.userpref_show')
             return
