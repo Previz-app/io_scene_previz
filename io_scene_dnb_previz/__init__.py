@@ -8,6 +8,8 @@ import bpy
 from bpy.app.handlers import persistent
 from bpy.props import BoolProperty, EnumProperty, IntProperty, StringProperty
 
+import previz
+
 from . import utils
 from . import three_js_exporter
 
@@ -186,7 +188,7 @@ class ExportPreviz(utils.BackgroundTasksOperator):
     @staticmethod
     def task_export_three_js(g):
         with utils.ThreeJSExportPaths(g['tmpdir']).scene.open('w') as fp:
-            three_js_exporter.export(three_js_exporter.build_scene(g['context']), fp)
+            previz.export(three_js_exporter.build_scene(g['context']), fp)
         return g
 
     @staticmethod

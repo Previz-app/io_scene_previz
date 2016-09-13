@@ -6,7 +6,6 @@ import bpy_extras.io_utils
 import mathutils
 
 import previz
-from previz import export
 
 from . import __name__ as generator
 
