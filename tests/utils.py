@@ -1,3 +1,4 @@
+from functools import wraps
 import json
 import os
 import pathlib
@@ -36,6 +37,7 @@ class MakeTempDirectories(object):
 
     def __call__(self, func):
         tmpdir = self.tmpdir
+        @wraps(func)
         def func_wrapper(*args, **kwargs):
             d = tmpdir / func.__qualname__
             d.mkdir()
@@ -48,6 +50,7 @@ class MakeTempDirectories(object):
 def scene(name):
     """Decorator that loads a test .blend scene before a test"""
     def decorator(func):
+        @wraps(func)
         def func_wrapper(*args, **kwargs):
             # Load .blend
 
