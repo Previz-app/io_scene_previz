@@ -359,6 +359,14 @@
     ],
     "name": "NgonObjectHierarchy",
     "type": "Mesh",
+    "userData": {
+     "previz": {
+      "uvsetNames": [
+       "UVIslands",
+       "UVConnected"
+      ]
+     }
+    },
     "uuid": "5158C485-D1DC-4FE7-933C-E69B0706AE0A",
     "visible": true
    },
@@ -384,6 +392,14 @@
     ],
     "name": "NgonObjectNoHierarchy",
     "type": "Mesh",
+    "userData": {
+     "previz": {
+      "uvsetNames": [
+       "UVIslands",
+       "UVConnected"
+      ]
+     }
+    },
     "uuid": "2DCBA5F3-FA29-479E-ABA4-9E438D15B016",
     "visible": true
    }

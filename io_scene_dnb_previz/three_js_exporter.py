@@ -36,8 +36,8 @@ class ThreeJSFaceBuilder(object):
         return (int(is_quad) << 0) + (int(has_uvsets) << 3 )
 
 
-def uvs_iterator(uvset):
-    return (d.uv for d in uvset.data)
+def build_uvset(uvset):
+    return previz.UVSet(uvset.name, (d.uv for d in uvset.data))
 
 
 def color2threejs(color):
@@ -74,7 +74,7 @@ def parse_geometry(blender_geometry):
     vertices_count = len(g.vertices)
 
     uvsets_count = len(g.tessface_uv_textures)
-    uvsets = (uvs_iterator(uvs) for uvs in g.tessface_uv_textures)
+    uvsets = list(build_uvset(uvset) for uvset in g.tessface_uv_textures)
 
     three_js_face = ThreeJSFaceBuilder(uvsets_count)
     faces = (three_js_face(face) for face in g.tessfaces)
