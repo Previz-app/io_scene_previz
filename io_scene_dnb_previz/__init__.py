@@ -7,6 +7,7 @@ import addon_utils
 import bpy
 from bpy.app.handlers import persistent
 from bpy.props import BoolProperty, EnumProperty, IntProperty, StringProperty
+from bpy_extras.io_utils import ExportHelper, path_reference_mode
 
 import previz
 
@@ -260,6 +261,28 @@ class ExportPreviz(utils.BackgroundTasksOperator):
         self.project_id = context.scene.previz_project_id
 
         return self.execute(context)
+
+
+class ExportPrevizFile(bpy.types.Operator, ExportHelper):
+    bl_idname = 'export_scene.previz_file'
+    bl_label = 'Export scene to a Previz file'
+
+    filename_ext = ".json"
+    filter_glob = StringProperty(
+        default="*.json;",
+        options={'HIDDEN'},
+    )
+
+    path_mode = path_reference_mode
+
+    check_extension = True
+
+    @log_execute
+    def execute(self, context):
+        filepath = pathlib.Path(self.as_keywords()['filepath'])
+        with filepath.open('w') as fp:
+            previz.export(three_js_exporter.build_scene(context), fp)
+        return {'FINISHED'}
 
 
 class CreateProject(bpy.types.Operator):
@@ -565,7 +588,7 @@ class PrevizPanel(bpy.types.Panel):
 
 
 def menu_export(self, context):
-    self.layout.operator(ExportPreviz.bl_idname, text="Upload scene to Previz (as three.js JSON)")
+    self.layout.operator(ExportPrevizFile.bl_idname, text="Previz (three.js .json)")
 
 def menu_image_upload(self, context):
     self.layout.operator(UploadImage.bl_idname, text="Upload image to Previz")
@@ -580,6 +603,7 @@ def set_project_selector_entry(dummy):
 
 def register():
     bpy.utils.register_class(ExportPreviz)
+    bpy.utils.register_class(ExportPrevizFile)
     bpy.utils.register_class(RefreshProjects)
     bpy.utils.register_class(CreateProject)
     bpy.utils.register_class(UploadImage)
@@ -596,6 +620,7 @@ def register():
 
 def unregister():
     bpy.utils.unregister_class(ExportPreviz)
+    bpy.utils.unregister_class(ExportPrevizFile)
     bpy.utils.unregister_class(RefreshProjects)
     bpy.utils.unregister_class(CreateProject)
     bpy.utils.unregister_class(UploadImage)
