@@ -19,15 +19,15 @@ Development
 Release
 -------
 
-Copy the `previz` module the `io_scene_dnd_previz folder` and zip that folder. Make sure that no stray __pycache__ files lying around. On Linux:
+Copy the `previz` module into the `io_scene_dnd_previz` folder and zip that folder. Make sure that no stray __pycache__ files lying around. On Linux:
 
 ```sh
 $ cd /path/to/repo
 $ git clean -f -d -x
 $ cd blender
+$ cp -r ../previz/previz io_scene_dnb_previz
 $ grep version io_scene_dnb_previz/__init__.py
     'version': (0, 0, 5),
-$ cp -r ../previz/previz/io_scene_dnb_previz
 $ zip -r io_scene_dnb_previz-v0.0.5.zip io_scene_dnb_previz
   adding: io_scene_dnb_previz/ (stored 0%)
   adding: io_scene_dnb_previz/utils.py (deflated 74%)
