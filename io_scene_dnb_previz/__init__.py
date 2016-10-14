@@ -580,6 +580,7 @@ class PrevizPanel(bpy.types.Panel):
         row.operator('export_scene.previz_refresh_projects', text='', icon='FILE_REFRESH')
 
         self.layout.operator('export_scene.previz_new_project', text='New project', icon='NEW')
+        self.layout.operator('export_scene.previz',             text='Upload',      icon='EXPORT')
 
 
 ################
