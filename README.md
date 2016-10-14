@@ -2,19 +2,10 @@ dnd Previz Blender integration
 ==============================
 
 
-Scene building conventions
---------------------------
+Testing
+-------
 
-- Screens objects names are prefixed with `screen`. Examples of valid names:
-  - `screen`
-  - `screenleft`
-  - `screenR`
-  - `screen_center`
-- Props objects names are prefixed with `prop`. Examples of valid names:
-  - `prop`
-  - `propstage`
-  - `propColumnLeft`
-  - `prop_column_right`
+Unittesting is made with [tox](https://tox.readthedocs.io/en/latest/). Make sure the `blender` executable is in your `PATH`.
 
 
 Development
@@ -25,13 +16,23 @@ Development
 * Hit F8 to refresh the plugin code
 
 
-Run tests
----------
+Release
+-------
 
-* Run `tests/run_tests.sh`
+Copy the `previz` module the `io_scene_dnd_previz folder` and zip that folder. Make sure that no stray __pycache__ files lying around. On Linux:
 
-
-Expected Blender three.js exporter parameters
----------------------------------------------
-
-See https://docs.google.com/spreadsheets/d/1Vx759ecdsOL40E1a7ADOzbhsbYe-lMSjdOUxkB3cWRI/edit#gid=461167001.
+```sh
+$ cd /path/to/repo
+$ git clean -f -d -x
+$ cd blender
+$ grep version io_scene_dnb_previz/__init__.py
+    'version': (0, 0, 5),
+$ cp -r ../previz/previz/io_scene_dnb_previz
+$ zip -r io_scene_dnb_previz-v0.0.5.zip io_scene_dnb_previz
+  adding: io_scene_dnb_previz/ (stored 0%)
+  adding: io_scene_dnb_previz/utils.py (deflated 74%)
+  adding: io_scene_dnb_previz/previz/ (stored 0%)
+  adding: io_scene_dnb_previz/previz/__init__.py (deflated 74%)
+  adding: io_scene_dnb_previz/three_js_exporter.py (deflated 65%)
+  adding: io_scene_dnb_previz/__init__.py (deflated 78%)
+```
