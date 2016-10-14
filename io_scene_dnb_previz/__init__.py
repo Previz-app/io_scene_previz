@@ -1,6 +1,7 @@
 import pathlib
 import queue
 import shutil
+import sys
 import tempfile
 
 import addon_utils
@@ -9,6 +10,8 @@ from bpy.app.handlers import persistent
 from bpy.props import BoolProperty, EnumProperty, IntProperty, StringProperty
 from bpy_extras.io_utils import ExportHelper, path_reference_mode
 
+
+sys.path.append(str(pathlib.Path(__file__).parent))
 import previz
 
 from . import utils
