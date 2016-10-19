@@ -424,7 +424,7 @@ class PrevizPreferences(bpy.types.AddonPreferences):
 
     api_root = StringProperty(
         name='API root',
-        default='https://previz.online/api'
+        default='https://app.previz.co/api'
     )
 
     api_token = StringProperty(
@@ -440,7 +440,7 @@ class PrevizPreferences(bpy.types.AddonPreferences):
         row.prop(self, 'api_token')
 
         op = layout.operator('wm.url_open', text="Tokens", icon='URL')
-        op.url = 'https://previz.online/settings#/api'
+        op.url = 'https://app.previz.co/settings#/api'
 
 
 #########
