@@ -158,7 +158,7 @@ class ExportPreviz(utils.BackgroundTasksOperator):
                 {'func': self.build_task_report('removed temporary directory {tmpdir}')}
             ])
 
-        self.tasks.put({'func': self.build_task_report('done')})
+        tasks.append({'func': self.build_task_report('done')})
 
         self.g['context'] = context # This is probably not the safest, but only a main process task uses it
 
