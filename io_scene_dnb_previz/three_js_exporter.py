@@ -83,6 +83,12 @@ def parse_geometry(blender_geometry):
     return g.name, faces, vertices, uvsets
 
 
+def horizon_color(context):
+    if context.scene.world == None:
+        return None
+    return color2threejs(context.scene.world.horizon_color)
+
+
 def exportable_objects(context):
     return (o for o in context.visible_objects if o.type == 'MESH')
 
@@ -95,5 +101,5 @@ def build_objects(context):
 def build_scene(context):
     return previz.Scene(generator,
                         pathlib.Path(bpy.data.filepath).name,
-                        color2threejs(context.scene.world.horizon_color),
+                        horizon_color(context),
                         build_objects(context))
