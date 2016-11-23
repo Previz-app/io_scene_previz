@@ -367,8 +367,10 @@ class UploadImage(utils.BackgroundTasksOperator):
 
     def build_task_upload(self, api_root, api_token, project_id, filepath):
         def task():
+            def progress_callback(encoder):
+                print('Uploading {} {} / {}'.format(str(filepath), encoder.bytes_read, encoder.len))
             p = utils.PrevizProject(api_root, api_token, project_id)
-            p.upload_asset(filepath.open('rb'))
+            p.upload_asset(filepath.name, filepath.open('rb'), progress_callback)
         return task
 
     def build_task_done_message(self, filepath):
