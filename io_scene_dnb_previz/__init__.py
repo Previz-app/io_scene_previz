@@ -585,7 +585,7 @@ class Active(object):
 
     def team_menu_update(self):
         def cb(other, context):
-            print('Set team: ' + self.as_string(self.team(context)))
+            self.log(context)
         return cb
 
     # Projects
@@ -609,7 +609,7 @@ class Active(object):
 
     def project_menu_update(self):
         def cb(other, context):
-            print('Set project: ' + self.as_string(self.project(context)))
+            self.log(context)
         return cb
 
     # Scenes
@@ -633,10 +633,18 @@ class Active(object):
 
     def scene_menu_update(self):
         def cb(other, context):
-            print('Set scene: ' + self.as_string(self.scene(context)))
+            self.log(context)
         return cb
 
     # utils
+
+    def log(self, context):
+        print('Active: team {}, project {}, scene {}'.format(
+            self.as_string(self.team(context)),
+            self.as_string(self.project(context)),
+            self.as_string(self.scene(context))
+            )
+        )
 
     @staticmethod
     def getitem(items, id, default=None):
