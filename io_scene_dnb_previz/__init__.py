@@ -474,8 +474,10 @@ class PrevizProjectsEnum(object):
         return dict((self.project_id_to_menu_id(id), (id, name)) for id, name in projects.items())
 
     @log_call
-    def refresh(self, api_root, api_token):
-        projects = utils.PrevizProject(api_root, api_token).projects()
+    def refresh(self, context):
+        api_root, api_token = previz_preferences(context)
+        api = utils.PrevizProject(api_root, api_token)
+        projects = api.projects()
         self.__projects_from_api = dict((p['id'], p['title']) for p in projects)
 
     def projects(self, current_project_id, current_project_name):
@@ -542,9 +544,8 @@ class RefreshProjects(bpy.types.Operator):
 
     @log_execute
     def execute(self, context):
-        api_root, api_token = previz_preferences(context)
         previous_project = context.scene.previz_projects
-        projects_enum.refresh(api_root, api_token)
+        projects_enum.refresh(context)
         context.scene.previz_projects = previous_project
         return {'FINISHED'}
 
