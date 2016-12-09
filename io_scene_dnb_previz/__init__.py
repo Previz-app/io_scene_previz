@@ -456,7 +456,7 @@ class PrevizProjectsEnum(object):
     default_id = -1
 
     def __init__(self):
-        self.__projects_from_api = {} # id: name
+        self.__projects_from_api = [] # id: name
 
     def menu_entries(self, current_project_id, current_project_name):
         projects = self.projects(current_project_id, current_project_name)
@@ -477,14 +477,21 @@ class PrevizProjectsEnum(object):
     def refresh(self, context):
         api_root, api_token = previz_preferences(context)
         api = utils.PrevizProject(api_root, api_token)
-        context.scene.previz_team = api.team()['name']
-        projects = api.projects()
-        self.__projects_from_api = dict((p['id'], p['title']) for p in projects)
+        all_data = api.get_all()
+
+        team = all_data[0]
+        context.scene.previz_team = team['name']
+
+        self.__projects_from_api = all_data
 
     def projects(self, current_project_id, current_project_name):
+        # dict((p['id'], p['title']) for p in projects)
         # Projects from API call cache
 
-        ret = self.__projects_from_api.copy()
+        ret = {}
+        if len(self.__projects_from_api) > 0:
+            team = self.__projects_from_api[0]
+            ret.update(dict((p['id'], p['title']) for p in team['projects']))
 
         # Currently selected project
 
