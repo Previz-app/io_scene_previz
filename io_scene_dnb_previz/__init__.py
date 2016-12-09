@@ -469,9 +469,24 @@ class PrevizProjectsEnum(object):
 
         return [self.menu_entry(id, name) for id, name in projects_list]
 
+    def scene_menu_entries(self, current_project_id, current_scene_id, current_scene_name):
+        scenes = self.scenes(current_project_id, current_scene_id, current_scene_name)
+        scenes.pop(self.default_id) # manually put it at the beginning of the entries
+
+        scenes_list = sorted(scenes.items(),
+                             key=lambda p: p[1], # scene name
+                             reverse=True)
+        scenes_list.append((self.default_id, self.default_name))
+
+        return [self.menu_entry(id, name) for id, name in scenes_list]
+
     def projects_for_menu_lookup(self, current_project_id, current_project_name):
         projects = self.projects(current_project_id, current_project_name)
         return dict((self.project_id_to_menu_id(id), (id, name)) for id, name in projects.items())
+
+    def scenes_for_menu_lookup(self, current_project_id, current_scene_id, current_scene_name):
+        scenes = self.scenes(current_project_id, current_scene_id, current_scene_name)
+        return dict((self.project_id_to_menu_id(id), (id, name)) for id, name in scenes.items())
 
     @log_call
     def refresh(self, context):
@@ -485,7 +500,6 @@ class PrevizProjectsEnum(object):
         self.__projects_from_api = all_data
 
     def projects(self, current_project_id, current_project_name):
-        # dict((p['id'], p['title']) for p in projects)
         # Projects from API call cache
 
         ret = {}
@@ -502,6 +516,32 @@ class PrevizProjectsEnum(object):
         ret[self.default_id] = self.default_name
 
         return ret
+
+    def scenes(self, current_project_id, current_scene_id, current_scene_name):
+        # Projects from API call cache
+
+        ret = {}
+        if len(self.__projects_from_api) > 0:
+            team = self.__projects_from_api[0]
+            scenes = self.scenes_for_project_id(current_project_id)
+            ret.update(dict((s['id'], s['name']) for s in scenes))
+
+        # Currently selected project
+
+        ret[current_scene_id] = current_scene_name
+
+        # default project
+
+        ret[self.default_id] = self.default_name
+
+        return ret
+
+    def scenes_for_project_id(self, id):
+        for team in self.__projects_from_api:
+            for project in team['projects']:
+                if project['id'] == id:
+                    return project['scenes']
+        return []
 
     @staticmethod
     def default_menu_id():
@@ -540,6 +580,25 @@ def update_callback(self, context):
     print('Set Previz project to "{}" (id: {})'.format(context.scene.previz_project_name,
                                                        context.scene.previz_project_id))
 
+def scene_items_callback(self, context):
+    current_project_id = context.scene.previz_project_id
+    current_scene_id = context.scene.previz_scene_id
+    current_scene_name = context.scene.previz_scene_name
+    return projects_enum.scene_menu_entries(current_project_id, current_scene_id, current_scene_name)
+
+def scene_update_callback(self, context):
+    current_project_id = context.scene.previz_project_id
+    current_scene_id = context.scene.previz_scene_id
+    current_scene_name = context.scene.previz_scene_name
+    menu_id = context.scene.previz_scenes
+
+    id, name = projects_enum.scenes_for_menu_lookup(current_project_id, current_scene_id, current_scene_name)[menu_id]
+
+    context.scene.previz_scene_id = id
+    context.scene.previz_scene_name = name
+
+    print('Set Previz scene to "{}" (id: {})'.format(context.scene.previz_scene_name,
+                                                     context.scene.previz_scene_id))
 
 class RefreshProjects(bpy.types.Operator):
     bl_idname = 'export_scene.previz_refresh_projects'
@@ -575,6 +634,12 @@ class PrevizPanel(bpy.types.Panel):
         update=update_callback,
     )
 
+    bpy.types.Scene.previz_scenes = EnumProperty(
+        name='Scene',
+        items=scene_items_callback,
+        update=scene_update_callback,
+    )
+
     bpy.types.Scene.previz_project_id = IntProperty(
         name = "Previz project ID",
         default=PrevizProjectsEnum.default_id
@@ -582,6 +647,16 @@ class PrevizPanel(bpy.types.Panel):
 
     bpy.types.Scene.previz_project_name = StringProperty(
         name="Previz project name",
+        default=PrevizProjectsEnum.default_name
+    )
+
+    bpy.types.Scene.previz_scene_id = IntProperty(
+        name = "Previz scene ID",
+        default=PrevizProjectsEnum.default_id
+    )
+
+    bpy.types.Scene.previz_scene_name = StringProperty(
+        name="Previz scene name",
         default=PrevizProjectsEnum.default_name
     )
 
@@ -601,6 +676,8 @@ class PrevizPanel(bpy.types.Panel):
         row = self.layout.row()
         row.prop(context.scene, 'previz_projects')
         row.operator('export_scene.previz_refresh_projects', text='', icon='FILE_REFRESH')
+
+        self.layout.prop(context.scene, 'previz_scenes')
 
         self.layout.operator('export_scene.previz_new_project', text='New project', icon='NEW')
         self.layout.operator('export_scene.previz',             text='Upload',      icon='EXPORT')
