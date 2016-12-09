@@ -562,6 +562,128 @@ class PrevizProjectsEnum(object):
 
 projects_enum = PrevizProjectsEnum()
 
+
+class Active(object):
+    default_team = '[Need to refresh]'
+    default_name = 'Select'
+    default_id = -1
+
+    def __init__(self, teams = []):
+        self.teams = teams # teams.projects.scenes
+
+    # Teams
+
+    def team(self, context):
+        return self.getitem(
+            self.teams,
+            self.as_id(context.scene.previz_active_team_id))
+
+    def team_menu_items(self):
+        def cb(other, context):
+            return self.menu_items(self.teams)
+        return cb
+
+    def team_menu_update(self):
+        def cb(other, context):
+            print('Set team: ' + self.as_string(self.team(context)))
+        return cb
+
+    # Projects
+
+    def projects(self, context):
+        team = self.team(context)
+        if not team:
+            return []
+        return team.get('projects', [])
+
+    def project(self, context):
+        return self.getitem(
+            self.projects(context),
+            self.as_id(context.scene.previz_active_project_id)
+        )
+
+    def project_menu_items(self):
+        def cb(other, context):
+            return self.menu_items(self.projects(context))
+        return cb
+
+    def project_menu_update(self):
+        def cb(other, context):
+            print('Set project: ' + self.as_string(self.project(context)))
+        return cb
+
+    # Scenes
+
+    def scenes(self, context):
+        project = self.project(context)
+        if not project:
+            return []
+        return project.get('scenes')
+
+    def scene(self, context):
+        return self.getitem(
+            self.scenes(context),
+            self.as_id(context.scene.previz_active_scene_id)
+        )
+
+    def scene_menu_items(self):
+        def cb(other, context):
+            return self.menu_items(self.scenes(context))
+        return cb
+
+    def scene_menu_update(self):
+        def cb(other, context):
+            print('Set scene: ' + self.as_string(self.scene(context)))
+        return cb
+
+    # utils
+
+    @staticmethod
+    def getitem(items, id, default=None):
+        for item in items:
+            if item['id'] == id:
+                return item
+        return default
+
+    @staticmethod
+    def contains(items, id):
+        for item in items:
+            if item[id] == id:
+                return True
+        return False
+
+    @staticmethod
+    def menu_items(items):
+        ret = []
+        for item in items:
+            name_key = Active.name_key(item)
+
+            id   = item['id']
+            name = item[name_key]
+            ret.append((str(id), name, name, id))
+        return ret
+
+    @staticmethod
+    def as_string(item):
+        name_key = Active.name_key(item)
+        return '{}[id:{}]'.format(item[name_key], item['id'])
+
+    @staticmethod
+    def name_key(item):
+        if 'title' in item:
+            return 'title'
+        return 'name'
+
+    @staticmethod
+    def as_id(prop):
+        if prop == '':
+            return -1
+        return int(prop)
+
+
+active = Active()
+
+
 def items_callback(self, context):
     current_project_id = context.scene.previz_project_id
     current_project_name = context.scene.previz_project_name
@@ -600,6 +722,23 @@ def scene_update_callback(self, context):
     print('Set Previz scene to "{}" (id: {})'.format(context.scene.previz_scene_name,
                                                      context.scene.previz_scene_id))
 
+#class RefreshProjects(bpy.types.Operator):
+#    bl_idname = 'export_scene.previz_refresh_projects'
+#    bl_label = 'Refresh Previz projects'
+#
+#    @classmethod
+#    def poll(cls, context):
+#        api_root, api_token = previz_preferences(context)
+#        return len(api_root) > 0 and len(api_token) > 0
+#
+#    @log_execute
+#    def execute(self, context):
+#        previous_project = context.scene.previz_projects
+#        projects_enum.refresh(context)
+#        context.scene.previz_projects = previous_project
+#        return {'FINISHED'}
+
+
 class RefreshProjects(bpy.types.Operator):
     bl_idname = 'export_scene.previz_refresh_projects'
     bl_label = 'Refresh Previz projects'
@@ -611,9 +750,10 @@ class RefreshProjects(bpy.types.Operator):
 
     @log_execute
     def execute(self, context):
-        previous_project = context.scene.previz_projects
-        projects_enum.refresh(context)
-        context.scene.previz_projects = previous_project
+        api_root, api_token = previz_preferences(context)
+        api = utils.PrevizProject(api_root, api_token)
+        active.teams = api.get_all()
+        print(active.teams)
         return {'FINISHED'}
 
 
@@ -623,6 +763,32 @@ class PrevizPanel(bpy.types.Panel):
     bl_region_type = "WINDOW"
     bl_context = "scene"
 
+
+
+
+
+    bpy.types.Scene.previz_active_team_id = EnumProperty(
+        name='Team',
+        items=active.team_menu_items(),
+        update=active.team_menu_update()
+    )
+
+    bpy.types.Scene.previz_active_project_id = EnumProperty(
+        name='Project',
+        items=active.project_menu_items(),
+        update=active.project_menu_update()
+    )
+
+    bpy.types.Scene.previz_active_scene_id = EnumProperty(
+        name='Scene',
+        items=active.scene_menu_items(),
+        update=active.scene_menu_update()
+    )
+
+
+
+
+    # XXX to delete ?
     bpy.types.Scene.previz_team = StringProperty(
         name="Team",
         default=PrevizProjectsEnum.default_team
@@ -670,17 +836,26 @@ class PrevizPanel(bpy.types.Panel):
             self.layout.operator('screen.userpref_show')
             return
 
-        self.layout.label('Team: {}'.format(context.scene.previz_team))
-        self.layout.label('Go online to switch current project')
+        self.layout.prop(context.scene, 'previz_active_team_id')
+        self.layout.prop(context.scene, 'previz_active_project_id')
+        self.layout.prop(context.scene, 'previz_active_scene_id')
+        self.layout.operator(
+            'export_scene.previz_refresh_projects',
+            text='Refresh',
+            icon='FILE_REFRESH'
+        )
 
-        row = self.layout.row()
-        row.prop(context.scene, 'previz_projects')
-        row.operator('export_scene.previz_refresh_projects', text='', icon='FILE_REFRESH')
+#        self.layout.label('Team: {}'.format(context.scene.previz_team))
+#        self.layout.label('Go online to switch current project')
 
-        self.layout.prop(context.scene, 'previz_scenes')
+#        row = self.layout.row()
+#        row.prop(context.scene, 'previz_projects')
+#        row.operator('export_scene.previz_refresh_projects', text='', icon='FILE_REFRESH')
 
-        self.layout.operator('export_scene.previz_new_project', text='New project', icon='NEW')
-        self.layout.operator('export_scene.previz',             text='Upload',      icon='EXPORT')
+#        self.layout.prop(context.scene, 'previz_scenes')
+
+#        self.layout.operator('export_scene.previz_new_project', text='New project', icon='NEW')
+#        self.layout.operator('export_scene.previz',             text='Upload',      icon='EXPORT')
 
 
 ################
