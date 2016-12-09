@@ -451,6 +451,7 @@ class PrevizPreferences(bpy.types.AddonPreferences):
 
 
 class PrevizProjectsEnum(object):
+    default_team = '[Need to refresh]'
     default_name = 'Select'
     default_id = -1
 
@@ -554,6 +555,11 @@ class PrevizPanel(bpy.types.Panel):
     bl_region_type = "WINDOW"
     bl_context = "scene"
 
+    bpy.types.Scene.previz_team = StringProperty(
+        name="Team",
+        default=PrevizProjectsEnum.default_team
+    )
+
     bpy.types.Scene.previz_projects = EnumProperty(
         name='Project',
         items=items_callback,
@@ -579,6 +585,9 @@ class PrevizPanel(bpy.types.Panel):
             self.layout.label('Search Previz in the Add-ons tab.')
             self.layout.operator('screen.userpref_show')
             return
+
+        self.layout.label('Team: {}'.format(context.scene.previz_team))
+        self.layout.label('Switch the current team online')
 
         row = self.layout.row()
         row.prop(context.scene, 'previz_projects')
