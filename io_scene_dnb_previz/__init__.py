@@ -477,6 +477,7 @@ class PrevizProjectsEnum(object):
     def refresh(self, context):
         api_root, api_token = previz_preferences(context)
         api = utils.PrevizProject(api_root, api_token)
+        context.scene.previz_team = api.team()['name']
         projects = api.projects()
         self.__projects_from_api = dict((p['id'], p['title']) for p in projects)
 
@@ -588,7 +589,7 @@ class PrevizPanel(bpy.types.Panel):
             return
 
         self.layout.label('Team: {}'.format(context.scene.previz_team))
-        self.layout.label('Switch the current team online')
+        self.layout.label('Go online to switch current project')
 
         row = self.layout.row()
         row.prop(context.scene, 'previz_projects')
