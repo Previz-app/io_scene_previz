@@ -761,7 +761,6 @@ class RefreshProjects(bpy.types.Operator):
         api_root, api_token = previz_preferences(context)
         api = utils.PrevizProject(api_root, api_token)
         active.teams = api.get_all()
-        print(active.teams)
         return {'FINISHED'}
 
 
