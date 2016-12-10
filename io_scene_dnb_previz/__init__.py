@@ -317,6 +317,7 @@ class CreateProject(bpy.types.Operator):
                                            self.api_token).new_project(self.project_name)
         context.scene.previz_project_name = project_data['title']
         context.scene.previz_project_id = project_data['id']
+        refresh_active(context)
         return {'FINISHED'}
 
     @log_invoke
@@ -691,6 +692,11 @@ class Active(object):
 
 active = Active()
 
+def refresh_active(context):
+    api_root, api_token = previz_preferences(context)
+    api = utils.PrevizProject(api_root, api_token)
+    active.teams = api.get_all()
+
 
 def items_callback(self, context):
     current_project_id = context.scene.previz_project_id
@@ -758,9 +764,7 @@ class RefreshProjects(bpy.types.Operator):
 
     @log_execute
     def execute(self, context):
-        api_root, api_token = previz_preferences(context)
-        api = utils.PrevizProject(api_root, api_token)
-        active.teams = api.get_all()
+        refresh_active(context)
         return {'FINISHED'}
 
 
@@ -844,7 +848,11 @@ class PrevizPanel(bpy.types.Panel):
             return
 
         self.layout.prop(context.scene, 'previz_active_team_id')
-        self.layout.prop(context.scene, 'previz_active_project_id')
+
+        row = self.layout.row()
+        row.prop(context.scene, 'previz_active_project_id')
+        row.operator('export_scene.previz_new_project', text='', icon='NEW')
+
         self.layout.prop(context.scene, 'previz_active_scene_id')
         self.layout.operator(
             'export_scene.previz_refresh_projects',
