@@ -821,10 +821,6 @@ class PrevizPanel(bpy.types.Panel):
     bl_region_type = "WINDOW"
     bl_context = "scene"
 
-
-
-
-
     bpy.types.Scene.previz_active_team_id = EnumProperty(
         name='Team',
         items=active.team_menu_items(),
@@ -841,47 +837,6 @@ class PrevizPanel(bpy.types.Panel):
         name='Scene',
         items=active.scene_menu_items(),
         update=active.scene_menu_update()
-    )
-
-
-
-
-    # XXX to delete ?
-    bpy.types.Scene.previz_team = StringProperty(
-        name="Team",
-        default=PrevizProjectsEnum.default_team
-    )
-
-    bpy.types.Scene.previz_projects = EnumProperty(
-        name='Project',
-        items=items_callback,
-        update=update_callback,
-    )
-
-    bpy.types.Scene.previz_scenes = EnumProperty(
-        name='Scene',
-        items=scene_items_callback,
-        update=scene_update_callback,
-    )
-
-    bpy.types.Scene.previz_project_id = IntProperty(
-        name = "Previz project ID",
-        default=PrevizProjectsEnum.default_id
-    )
-
-    bpy.types.Scene.previz_project_name = StringProperty(
-        name="Previz project name",
-        default=PrevizProjectsEnum.default_name
-    )
-
-    bpy.types.Scene.previz_scene_id = IntProperty(
-        name = "Previz scene ID",
-        default=PrevizProjectsEnum.default_id
-    )
-
-    bpy.types.Scene.previz_scene_name = StringProperty(
-        name="Previz scene name",
-        default=PrevizProjectsEnum.default_name
     )
 
     @log_draw
@@ -912,18 +867,6 @@ class PrevizPanel(bpy.types.Panel):
             icon='FILE_REFRESH'
         )
 
-#        self.layout.label('Team: {}'.format(context.scene.previz_team))
-#        self.layout.label('Go online to switch current project')
-
-#        row = self.layout.row()
-#        row.prop(context.scene, 'previz_projects')
-#        row.operator('export_scene.previz_refresh_projects', text='', icon='FILE_REFRESH')
-
-#        self.layout.prop(context.scene, 'previz_scenes')
-
-#        self.layout.operator('export_scene.previz_new_project', text='New project', icon='NEW')
-#        self.layout.operator('export_scene.previz',             text='Upload',      icon='EXPORT')
-
 
 ################
 # Registration #
@@ -935,14 +878,6 @@ def menu_export(self, context):
 
 def menu_image_upload(self, context):
     self.layout.operator(UploadImage.bl_idname, text="Upload image to Previz")
-
-
-@persistent
-def set_project_selector_entry(dummy):
-    project_id = bpy.context.scene.previz_project_id
-    menu_id = PrevizProjectsEnum.project_id_to_menu_id(project_id)
-    bpy.context.scene.previz_projects = menu_id
-
 
 def register():
     bpy.utils.register_class(ExportPreviz)
@@ -958,9 +893,6 @@ def register():
 
     bpy.types.INFO_MT_file_export.append(menu_export)
     bpy.types.IMAGE_MT_image.append(menu_image_upload)
-
-    bpy.app.handlers.load_post.append(set_project_selector_entry)
-
 
 def unregister():
     bpy.utils.unregister_class(ExportPreviz)
