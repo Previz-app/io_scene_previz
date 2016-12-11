@@ -355,10 +355,9 @@ class CreateScene(bpy.types.Operator):
         api = utils.PrevizProject(self.api_root,
                                   self.api_token,
                                   project_id)
-        project_data = api.new_scene(self.scene_name)
-        #context.scene.previz_project_name = project_data['title']
-        #context.scene.previz_project_id = project_data['id']
+        scene = api.new_scene(self.scene_name)
         refresh_active(context)
+        active.set_scene(context, scene)
         return {'FINISHED'}
 
     @log_invoke
@@ -673,6 +672,9 @@ class Active(object):
             self.scenes(context),
             self.as_id(context.scene.previz_active_scene_id)
         )
+
+    def set_scene(self, context, scene):
+        context.scene.previz_active_scene_id = str(scene['id'])
 
     def scene_menu_items(self):
         def cb(other, context):
