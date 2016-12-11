@@ -313,11 +313,10 @@ class CreateProject(bpy.types.Operator):
 
     @log_execute
     def execute(self, context):
-        project_data = utils.PrevizProject(self.api_root,
-                                           self.api_token).new_project(self.project_name)
-        #context.scene.previz_project_name = project_data['title']
-        #context.scene.previz_project_id = project_data['id']
+        project = utils.PrevizProject(self.api_root,
+                                      self.api_token).new_project(self.project_name)
         refresh_active(context)
+        active.set_project(context, project)
         return {'FINISHED'}
 
     @log_invoke
@@ -647,6 +646,9 @@ class Active(object):
             self.projects(context),
             self.as_id(context.scene.previz_active_project_id)
         )
+
+    def set_project(self, context, project):
+        context.scene.previz_active_project_id = str(project['id'])
 
     def project_menu_items(self):
         def cb(other, context):
