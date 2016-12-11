@@ -613,6 +613,10 @@ class Active(object):
     def __init__(self, teams = []):
         self.teams = teams # teams.projects.scenes
 
+    @property
+    def is_valid(self):
+        return len(self.teams) > 0
+
     # Teams
 
     def team(self, context):
@@ -890,16 +894,17 @@ class PrevizPanel(bpy.types.Panel):
             self.layout.operator('screen.userpref_show')
             return
 
-        row = self.layout.row()
-        row.prop(context.scene, 'previz_active_team_id')
+        if active.is_valid:
+            row = self.layout.row()
+            row.prop(context.scene, 'previz_active_team_id')
 
-        row = self.layout.row()
-        row.prop(context.scene, 'previz_active_project_id')
-        row.operator('export_scene.previz_new_project', text='', icon='NEW')
+            row = self.layout.row()
+            row.prop(context.scene, 'previz_active_project_id')
+            row.operator('export_scene.previz_new_project', text='', icon='NEW')
 
-        row = self.layout.row()
-        row.prop(context.scene, 'previz_active_scene_id')
-        row.operator('export_scene.previz_new_scene', text='', icon='NEW')
+            row = self.layout.row()
+            row.prop(context.scene, 'previz_active_scene_id')
+            row.operator('export_scene.previz_new_scene', text='', icon='NEW')
 
         self.layout.operator(
             'export_scene.previz_refresh_projects',
