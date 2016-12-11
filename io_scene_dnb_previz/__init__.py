@@ -745,61 +745,6 @@ def refresh_active(context):
     active.teams = api.get_all()
 
 
-def items_callback(self, context):
-    current_project_id = context.scene.previz_project_id
-    current_project_name = context.scene.previz_project_name
-    return projects_enum.menu_entries(current_project_id, current_project_name)
-
-def update_callback(self, context):
-    current_project_id = context.scene.previz_project_id
-    current_project_name = context.scene.previz_project_name
-    menu_id = context.scene.previz_projects
-
-    id, name = projects_enum.projects_for_menu_lookup(current_project_id, current_project_name)[menu_id]
-
-    context.scene.previz_project_id = id
-    context.scene.previz_project_name = name
-
-    print('Set Previz project to "{}" (id: {})'.format(context.scene.previz_project_name,
-                                                       context.scene.previz_project_id))
-
-def scene_items_callback(self, context):
-    current_project_id = context.scene.previz_project_id
-    current_scene_id = context.scene.previz_scene_id
-    current_scene_name = context.scene.previz_scene_name
-    return projects_enum.scene_menu_entries(current_project_id, current_scene_id, current_scene_name)
-
-def scene_update_callback(self, context):
-    current_project_id = context.scene.previz_project_id
-    current_scene_id = context.scene.previz_scene_id
-    current_scene_name = context.scene.previz_scene_name
-    menu_id = context.scene.previz_scenes
-
-    id, name = projects_enum.scenes_for_menu_lookup(current_project_id, current_scene_id, current_scene_name)[menu_id]
-
-    context.scene.previz_scene_id = id
-    context.scene.previz_scene_name = name
-
-    print('Set Previz scene to "{}" (id: {})'.format(context.scene.previz_scene_name,
-                                                     context.scene.previz_scene_id))
-
-#class RefreshProjects(bpy.types.Operator):
-#    bl_idname = 'export_scene.previz_refresh_projects'
-#    bl_label = 'Refresh Previz projects'
-#
-#    @classmethod
-#    def poll(cls, context):
-#        api_root, api_token = previz_preferences(context)
-#        return len(api_root) > 0 and len(api_token) > 0
-#
-#    @log_execute
-#    def execute(self, context):
-#        previous_project = context.scene.previz_projects
-#        projects_enum.refresh(context)
-#        context.scene.previz_projects = previous_project
-#        return {'FINISHED'}
-
-
 class RefreshProjects(bpy.types.Operator):
     bl_idname = 'export_scene.previz_refresh_projects'
     bl_label = 'Refresh Previz projects'
