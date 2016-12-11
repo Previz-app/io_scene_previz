@@ -315,8 +315,8 @@ class CreateProject(bpy.types.Operator):
     def execute(self, context):
         project_data = utils.PrevizProject(self.api_root,
                                            self.api_token).new_project(self.project_name)
-        context.scene.previz_project_name = project_data['title']
-        context.scene.previz_project_id = project_data['id']
+        #context.scene.previz_project_name = project_data['title']
+        #context.scene.previz_project_id = project_data['id']
         refresh_active(context)
         return {'FINISHED'}
 
@@ -325,6 +325,47 @@ class CreateProject(bpy.types.Operator):
         self.api_root, self.api_token = previz_preferences(context)
         return context.window_manager.invoke_props_dialog(self)
 
+
+class CreateScene(bpy.types.Operator):
+    bl_idname = 'export_scene.previz_new_scene'
+    bl_label = 'New Previz scene'
+
+    api_root = StringProperty(
+        name='API root',
+        options={'HIDDEN'}
+    )
+
+    api_token = StringProperty(
+        name='API token',
+        options={'HIDDEN'}
+    )
+
+    scene_name = StringProperty(
+        name='Scene name'
+    )
+
+    # XXX check if a valid project is set
+    @classmethod
+    def poll(cls, context):
+        api_root, api_token = previz_preferences(context)
+        return len(api_root) > 0 and len(api_token) > 0
+
+    @log_execute
+    def execute(self, context):
+        project_id = active.project(context)['id']
+        api = utils.PrevizProject(self.api_root,
+                                  self.api_token,
+                                  project_id)
+        project_data = api.new_scene(self.scene_name)
+        #context.scene.previz_project_name = project_data['title']
+        #context.scene.previz_project_id = project_data['id']
+        refresh_active(context)
+        return {'FINISHED'}
+
+    @log_invoke
+    def invoke(self, context, event):
+        self.api_root, self.api_token = previz_preferences(context)
+        return context.window_manager.invoke_props_dialog(self)
 
 class UploadImage(utils.BackgroundTasksOperator):
     bl_idname = 'export_scene.previz_upload_image'
@@ -674,6 +715,8 @@ class Active(object):
 
     @staticmethod
     def as_string(item):
+        if item is None:
+            return str(None)
         name_key = Active.name_key(item)
         return '{}[id:{}]'.format(item[name_key], item['id'])
 
@@ -847,13 +890,17 @@ class PrevizPanel(bpy.types.Panel):
             self.layout.operator('screen.userpref_show')
             return
 
-        self.layout.prop(context.scene, 'previz_active_team_id')
+        row = self.layout.row()
+        row.prop(context.scene, 'previz_active_team_id')
 
         row = self.layout.row()
         row.prop(context.scene, 'previz_active_project_id')
         row.operator('export_scene.previz_new_project', text='', icon='NEW')
 
-        self.layout.prop(context.scene, 'previz_active_scene_id')
+        row = self.layout.row()
+        row.prop(context.scene, 'previz_active_scene_id')
+        row.operator('export_scene.previz_new_scene', text='', icon='NEW')
+
         self.layout.operator(
             'export_scene.previz_refresh_projects',
             text='Refresh',
@@ -897,6 +944,7 @@ def register():
     bpy.utils.register_class(ExportPrevizFile)
     bpy.utils.register_class(RefreshProjects)
     bpy.utils.register_class(CreateProject)
+    bpy.utils.register_class(CreateScene)
     bpy.utils.register_class(UploadImage)
 
     bpy.utils.register_class(PrevizPreferences)
@@ -914,6 +962,7 @@ def unregister():
     bpy.utils.unregister_class(ExportPrevizFile)
     bpy.utils.unregister_class(RefreshProjects)
     bpy.utils.unregister_class(CreateProject)
+    bpy.utils.unregister_class(CreateScene)
     bpy.utils.unregister_class(UploadImage)
 
     bpy.utils.unregister_class(PrevizPreferences)
