@@ -96,6 +96,11 @@ class ExportPreviz(utils.BackgroundTasksOperator):
         default=-1
     )
 
+    scene_id = IntProperty(
+        name='Previz scene ID',
+        default=-1
+    )
+
     debug_cleanup = BoolProperty(
         name='Cleanup temporary folder',
         default=True,
@@ -125,9 +130,9 @@ class ExportPreviz(utils.BackgroundTasksOperator):
         api_root, api_token = previz_preferences(context)
         api_root_is_valid = len(api_root) > 0
         api_token_is_valid = len(api_token) > 0
-        previz_project_is_valid = context.scene.previz_project_id >=0
+        active_scene_is_valid = active.is_valid(context)
 
-        return api_root_is_valid and api_token_is_valid and previz_project_is_valid
+        return api_root_is_valid and api_token_is_valid and active_scene_is_valid
 
     def build_tasks(self, context):
         tasks = [
@@ -203,7 +208,7 @@ class ExportPreviz(utils.BackgroundTasksOperator):
     @staticmethod
     def task_update_previz_scene(g):
         p = utils.ThreeJSExportPaths(g['tmpdir'])
-        g['project'].update_scene(p.scene.open('rb'))
+        g['project'].update_scene(g['scene_id'], p.scene.name, p.scene.open('rb'))
         return g
 
     @staticmethod
@@ -251,17 +256,23 @@ class ExportPreviz(utils.BackgroundTasksOperator):
             self.report({'ERROR_INVALID_INPUT'}, 'No valid Previz project ID specified')
             return {'CANCELLED'}
 
+        if self.scene_id < 0:
+            self.report({'ERROR_INVALID_INPUT'}, 'No valid Previz scene ID specified')
+            return {'CANCELLED'}
+
         self.g['property_tmpdir'] = self.debug_tmpdir
         self.g['project'] = utils.PrevizProject(self.api_root,
                                                 self.api_token,
                                                 self.project_id)
+        self.g['scene_id'] = self.scene_id
 
         return super(ExportPreviz, self).execute(context)
 
     @log_invoke
     def invoke(self, context, event):
         self.api_root, self.api_token = previz_preferences(context)
-        self.project_id = context.scene.previz_project_id
+        self.project_id = active.project(context)['id']
+        self.scene_id = active.scene(context)['id']
 
         return self.execute(context)
 
@@ -612,8 +623,11 @@ class Active(object):
         self.teams = teams # teams.projects.scenes
 
     @property
-    def is_valid(self):
+    def is_refreshed(self):
         return len(self.teams) > 0
+
+    def is_valid(self, context):
+        return self.scene(context) is not None
 
     # Teams
 
@@ -802,7 +816,7 @@ class PrevizPanel(bpy.types.Panel):
             self.layout.operator('screen.userpref_show')
             return
 
-        if active.is_valid:
+        if active.is_refreshed:
             row = self.layout.row()
             row.prop(context.scene, 'previz_active_team_id')
 
@@ -813,6 +827,12 @@ class PrevizPanel(bpy.types.Panel):
             row = self.layout.row()
             row.prop(context.scene, 'previz_active_scene_id')
             row.operator('export_scene.previz_new_scene', text='', icon='NEW')
+
+            self.layout.operator(
+                'export_scene.previz',
+                text='Update Previz scene',
+                icon='EXPORT'
+            )
 
         self.layout.operator(
             'export_scene.previz_refresh_projects',
