@@ -405,14 +405,19 @@ class UploadImage(utils.BackgroundTasksOperator):
         api_root_is_valid = len(api_root) > 0
         api_token_is_valid = len(api_token) > 0
         
-        previz_project_is_valid = context.scene.previz_project_id >= 0
+        active_scene_is_valid = active.is_valid(context)
         
-        return is_valid_image and api_root_is_valid and api_token_is_valid and previz_project_is_valid
+        return is_valid_image and api_root_is_valid and api_token_is_valid and active_scene_is_valid
 
     def build_tasks(self, context):
         filepath = pathlib.Path(self.filepath)
         tasks = [
-            {'func': self.build_task_upload(self.api_root, self.api_token, self.project_id, filepath)},
+            {'func': self.build_task_upload(
+                        self.api_root,
+                        self.api_token,
+                        self.project_id,
+                        filepath
+                    )},
             {'func': self.build_task_done_message(filepath)},
         ]
         return tasks
@@ -464,7 +469,7 @@ class UploadImage(utils.BackgroundTasksOperator):
     @log_invoke
     def invoke(self, context, event):
         self.api_root, self.api_token = previz_preferences(context)
-        self.project_id = context.scene.previz_project_id
+        self.project_id = active.project(context)['id']
 
         image = context.space_data.image
         filepath = bpy.path.abspath(image.filepath, library=image.library)
