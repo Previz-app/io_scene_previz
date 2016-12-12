@@ -358,7 +358,8 @@ class CreateScene(bpy.types.Operator):
     @classmethod
     def poll(cls, context):
         api_root, api_token = previz_preferences(context)
-        return len(api_root) > 0 and len(api_token) > 0
+        is_project_valid = active.project(context) is not None
+        return len(api_root) > 0 and len(api_token) > 0 and is_project_valid
 
     @log_execute
     def execute(self, context):
