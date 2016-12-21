@@ -152,8 +152,6 @@ class ExportPreviz(utils.BackgroundTasksOperator):
                 {'func': ExportPreviz.task_update_previz_assets,
                  'run_in_subprocess': True},
                 {'func': self.build_task_report('updating state')},
-                {'func': ExportPreviz.task_set_previz_state,
-                 'run_in_subprocess': True},
                 {'func': self.build_task_report('done all API calls')}
             ])
 
@@ -223,11 +221,6 @@ class ExportPreviz(utils.BackgroundTasksOperator):
         for local_asset in p.assets:
             g['project'].upload_asset(local_asset.open('rb'))
 
-        return g
-
-    @staticmethod
-    def task_set_previz_state(g):
-        g['project'].set_state('viewer')
         return g
 
     def task_done(self, result):
