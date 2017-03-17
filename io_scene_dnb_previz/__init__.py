@@ -19,8 +19,8 @@ from . import three_js_exporter
 
 
 bl_info = {
-    'name': "dandelion + burdock's Previz integration",
-    'author': "Charles Flèche (charles.fleche@free.fr)",
+    'name': "Previz integration",
+    'author': "Previz (info@previz.co)",
     'version': (0, 0, 8),
     'blender': (2, 76, 0),
     'location': "File > Export",
