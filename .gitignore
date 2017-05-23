@@ -88,3 +88,8 @@ ENV/
 
 # Rope project settings
 .ropeproject
+
+# Previz
+io_scene_dnb_previz/requests_toolbelt
+io_scene_dnb_previz/previz
+
