@@ -30,8 +30,8 @@ def error_message():
             '\n',
             78*'*',
             'Testing environment not set. Set the variables :',
-            '\t-{}'.format(PREVIZ_API_ROOT_ENVVAR),
-            '\t-{}'.format(PREVIZ_API_TOKEN_ENVVAR),
+            '\t- {}'.format(PREVIZ_API_ROOT_ENVVAR),
+            '\t- {}'.format(PREVIZ_API_TOKEN_ENVVAR),
             78*'*',
             '\n'
         ]
