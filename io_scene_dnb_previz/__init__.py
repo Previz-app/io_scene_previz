@@ -649,7 +649,8 @@ class Active(object):
     def team(self, context):
         return self.getitem(
             self.teams,
-            self.as_id(context.scene.previz_active_team_id))
+            context.scene.previz_active_team_id
+        )
 
     def team_menu_items(self):
         def cb(other, context):
@@ -676,7 +677,7 @@ class Active(object):
     def project(self, context):
         return self.getitem(
             self.projects(context),
-            self.as_id(context.scene.previz_active_project_id)
+            context.scene.previz_active_project_id
         )
 
     def set_project(self, context, project):
@@ -703,7 +704,7 @@ class Active(object):
     def scene(self, context):
         return self.getitem(
             self.scenes(context),
-            self.as_id(context.scene.previz_active_scene_id)
+            context.scene.previz_active_scene_id
         )
 
     def set_scene(self, context, scene):
