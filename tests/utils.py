@@ -9,14 +9,13 @@ import tempfile
 
 import bpy
 
+import previz.testsutils
+
 import io_scene_dnb_previz
 from io_scene_dnb_previz.utils import PrevizProject
 
 
 BLENDS_DIR_NAME = 'blends'
-
-DUMMY_UNITTEST_PROJECT_ID = 1
-DUMMY_UNITTEST_PROJECT_NAME = '*Unittest dummy project*'
 
 PREVIZ_API_ROOT_ENVVAR = 'PREVIZ_API_ROOT'
 PREVIZ_API_TOKEN_ENVVAR = 'PREVIZ_API_TOKEN'
@@ -45,6 +44,11 @@ class MakeTempDirectories(object):
             func(*args, **kwargs)
             shutil.rmtree(str(d))
         return func_wrapper
+
+
+def build_api_decorators():
+    return previz.testsutils.Decorators(os.environ[PREVIZ_API_TOKEN_ENVVAR],
+                                        os.environ[PREVIZ_API_ROOT_ENVVAR])
 
 
 def scene(name):
