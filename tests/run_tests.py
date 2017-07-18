@@ -21,7 +21,7 @@ import nose
 blender_addon_repo_root_path = str(Path(__file__).parent.parent)
 sys.path.append(blender_addon_repo_root_path)
 
-from tests.utils import PREVIZ_API_ROOT_ENVVAR, PREVIZ_API_TOKEN_ENVVAR
+from tests import PREVIZ_API_ROOT_ENVVAR, PREVIZ_API_TOKEN_ENVVAR
 
 
 def error_message():
