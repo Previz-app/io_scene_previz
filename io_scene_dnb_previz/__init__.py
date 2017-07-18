@@ -659,10 +659,6 @@ class Active(object):
 
     def team_menu_update(self):
         def cb(other, context):
-            api_root, api_token = previz_preferences(context)
-            api = utils.PrevizProject(api_root, api_token)
-            api.switch_team(int(context.scene.previz_active_team_id))
-            refresh_active(context)
             self.log(context)
         return cb
 
