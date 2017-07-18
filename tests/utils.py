@@ -118,25 +118,22 @@ def load_three_js_json(path, strip_uuids=False):
 
 
 def run_previz_exporter(
+        project_id=None,
+        scene_id=None,
+        debug_run_api_requests=True,
         debug_tmpdir=None,
         debug_cleanup=False,
-        debug_run_api_requests=False,
-        debug_run_modal=False,
-        project_id=None):
-    
+        debug_run_modal=False):
     api_root, api_token = io_scene_dnb_previz.previz_preferences(bpy.context)
-    
     kwargs = {
         'api_root': api_root,
         'api_token': api_token,
         'debug_run_api_requests': debug_run_api_requests,
         'debug_cleanup': debug_cleanup,
-        'debug_run_modal': debug_run_modal
+        'debug_run_modal': debug_run_modal,
+        'project_id': project_id,
+        'scene_id': scene_id
     }
-
-    if project_id is None:
-        project_id = bpy.context.scene.previz_project_id
-    kwargs['project_id'] = project_id
 
     if debug_tmpdir is not None:
         kwargs['debug_tmpdir'] = str(debug_tmpdir)
