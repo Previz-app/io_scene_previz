@@ -265,7 +265,7 @@ class ExportPrevizFromUI(bpy.types.Operator):
         api_root_is_valid = len(api_root) > 0
         api_token_is_valid = len(api_token) > 0
         active_scene_is_valid = active.is_valid(context)
-        operator_is_valid = ExportPreviz.poll(cls, context)
+        operator_is_valid = ExportPreviz.poll(context)
         return api_root_is_valid \
                and api_token_is_valid \
                and active_scene_is_valid \
