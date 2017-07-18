@@ -116,25 +116,23 @@ class TestDecorators(unittest.TestCase):
         self.assertEqual(scene['id'], '5a56a895-46ef-4f0f-862c-38ce14f6275b')
 
 
-class TestPlugin(unittest.TestCase):
+class TestPluginLoadsCorrectly(unittest.TestCase):
     @scene('test_exporter.blend')
     @mkdtemp
-    @apidecs.tempproject()
-    @apidecs.tempscene()
-    def test_run_export(self, tmpdir, scenepath, project, scene):
-        debug_tmpdir = tmpdir/EXPORT_DIRNAME
+    def test_run_export(self, tmpdir, scenepath):
+        filepath = tmpdir/'export.json'
         self.assertEqual(
-            run_previz_exporter(
-                project_id=project['id'],
-                scene_id=scene['id'],
-                debug_run_api_requests=False,
-                debug_tmpdir=debug_tmpdir),
-            {'FINISHED'})
+            bpy.ops.export_scene.previz_file(filepath=str(filepath)),
+            {'FINISHED'}
+        )
+        self.assertTrue(filepath.exists())
 
 
 #class TestApi(unittest.TestCase):
     #@scene('test_assets.blend')
     #@mkdtemp
+    #@apidecs.tempproject()
+    #@apidecs.tempscene()
     #def test_run_export(self, tmpdir, scenepath):
         #project_id = run_create_project(random_project_name())
 
