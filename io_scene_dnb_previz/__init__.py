@@ -742,13 +742,15 @@ class Active(object):
 
     @staticmethod
     def menu_items(items):
+        number = -1
         ret = []
         for item in items:
             name_key = Active.name_key(item)
 
             id   = item['id']
             name = item[name_key]
-            ret.append((str(id), name, name, id))
+            number += 1
+            ret.append((id, name, name, number))
         return ret
 
     @staticmethod
