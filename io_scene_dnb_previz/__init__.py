@@ -555,10 +555,11 @@ class PrevizProjectsEnum(object):
 
     @log_call
     def refresh(self, context):
+        '''XXX still used ?'''
+        print('REFRESH')
         api_root, api_token = previz_preferences(context)
         api = utils.PrevizProject(api_root, api_token)
         all_data = api.get_all()
-
         team = all_data[0]
         context.scene.previz_team = team['name']
 
