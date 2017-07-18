@@ -777,8 +777,8 @@ active = Active()
 
 def refresh_active(context):
     api_root, api_token = previz_preferences(context)
-    api = utils.PrevizProject(api_root, api_token)
-    active.teams = api.get_all()
+    p = utils.PrevizProject(api_root, api_token)
+    active.teams = p.get_all()
 
 
 class RefreshProjects(bpy.types.Operator):
