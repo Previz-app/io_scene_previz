@@ -132,19 +132,6 @@ class TestPlugin(unittest.TestCase):
             {'FINISHED'})
 
 
-#class TestThreeJSExportPaths(unittest.TestCase):
-    #@scene('test_assets.blend')
-    #@mkdtemp
-    #def test_it(self, tmpdir, scenepath):
-        #export_dir = tmpdir / EXPORT_DIRNAME
-        #run_previz_exporter(export_dir)
-
-        #p = ThreeJSExportPaths(export_dir)
-
-        #self.assertTrue(p.scene.exists())
-        #self.assertListEqual(sorted([x.name for x in p.assets]), [])
-
-
 #class TestApi(unittest.TestCase):
     #@scene('test_assets.blend')
     #@mkdtemp
