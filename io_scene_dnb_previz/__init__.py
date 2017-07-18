@@ -233,16 +233,16 @@ class ExportPreviz(utils.BackgroundTasksOperator):
         if len(self.api_root) == 0 :
             self.report({'ERROR_INVALID_INPUT'}, 'No Previz API root specified')
             return {'CANCELLED'}
-        
+
         if len(self.api_token) == 0 :
             self.report({'ERROR_INVALID_INPUT'}, 'No Previz API token specified')
             return {'CANCELLED'}
 
-        if self.project_id < 0:
+        if len(self.project_id) == 0:
             self.report({'ERROR_INVALID_INPUT'}, 'No valid Previz project ID specified')
             return {'CANCELLED'}
 
-        if self.scene_id < 0:
+        if len(self.scene_id) == 0:
             self.report({'ERROR_INVALID_INPUT'}, 'No valid Previz scene ID specified')
             return {'CANCELLED'}
 
@@ -254,13 +254,35 @@ class ExportPreviz(utils.BackgroundTasksOperator):
 
         return super(ExportPreviz, self).execute(context)
 
+
+class ExportPrevizFromUI(bpy.types.Operator):
+    bl_idname = 'export_scene.previz_from_ui'
+    bl_label = 'Export scene to Previz'
+
+    @classmethod
+    def poll(cls, context):
+        api_root, api_token = previz_preferences(context)
+        api_root_is_valid = len(api_root) > 0
+        api_token_is_valid = len(api_token) > 0
+        active_scene_is_valid = active.is_valid(context)
+        operator_is_valid = ExportPreviz.poll(cls, context)
+        return api_root_is_valid \
+               and api_token_is_valid \
+               and active_scene_is_valid \
+               and operator_is_valid
+
     @log_invoke
     def invoke(self, context, event):
-        self.api_root, self.api_token = previz_preferences(context)
-        self.project_id = active.project(context)['id']
-        self.scene_id = active.scene(context)['id']
+        api_root, api_token = previz_preferences(context)
+        project_id = active.project(context)['id']
+        scene_id = active.scene(context)['id']
 
-        return self.execute(context)
+        return bpy.ops.export_scene.previz(
+            api_root=api_root,
+            api_token=api_token,
+            project_id=project_id,
+            scene_id=scene_id
+        )
 
 
 class ExportPrevizFile(bpy.types.Operator, ExportHelper):
@@ -821,7 +843,7 @@ class PrevizPanel(bpy.types.Panel):
             row.operator('export_scene.previz_new_scene', text='', icon='NEW')
 
             self.layout.operator(
-                'export_scene.previz',
+                'export_scene.previz_from_ui',
                 text='Update Previz scene',
                 icon='EXPORT'
             )
