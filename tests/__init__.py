@@ -176,23 +176,23 @@ class TestPlugin(unittest.TestCase):
         #self.assertEqual(c(.13, 2.47, .21), 2228022)
 
 
-#class TestHorizonColor(unittest.TestCase):
-    #def setUp(self):
-        #class Object(object):
-            #pass
+class TestHorizonColor(unittest.TestCase):
+    def setUp(self):
+        class Object(object):
+            pass
 
-        #self.context_no_world = Object()
-        #self.context_no_world.scene = Object()
-        #self.context_no_world.scene.world = None
+        self.context_no_world = Object()
+        self.context_no_world.scene = Object()
+        self.context_no_world.scene.world = None
 
-        #self.context_with_world = Object()
-        #self.context_with_world.scene = Object()
-        #self.context_with_world.scene.world = Object()
-        #self.context_with_world.scene.world.horizon_color = Object()
-        #self.context_with_world.scene.world.horizon_color.r = .13
-        #self.context_with_world.scene.world.horizon_color.g = .17
-        #self.context_with_world.scene.world.horizon_color.b = .19
+        self.context_with_world = Object()
+        self.context_with_world.scene = Object()
+        self.context_with_world.scene.world = Object()
+        self.context_with_world.scene.world.horizon_color = Object()
+        self.context_with_world.scene.world.horizon_color.r = .13
+        self.context_with_world.scene.world.horizon_color.g = .17
+        self.context_with_world.scene.world.horizon_color.b = .19
 
-    #def test_horizon_color(self):
-        #self.assertEqual(horizon_color(self.context_no_world), None)
-        #self.assertEqual(horizon_color(self.context_with_world), 2173744)
+    def test_horizon_color(self):
+        self.assertEqual(horizon_color(self.context_no_world), None)
+        self.assertEqual(horizon_color(self.context_with_world), 2173744)
