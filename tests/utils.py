@@ -71,10 +71,6 @@ def scene(name):
             prefs.api_root = os.environ[PREVIZ_API_ROOT_ENVVAR]
             prefs.api_token = os.environ[PREVIZ_API_TOKEN_ENVVAR]
 
-            # Set dummy Previz project
-            bpy.context.scene.previz_project_id = DUMMY_UNITTEST_PROJECT_ID
-            bpy.context.scene.previz_project_name = DUMMY_UNITTEST_PROJECT_NAME
-
             # Run test
             kwargs['scenepath'] = scenepath
             return func(*args, **kwargs)
