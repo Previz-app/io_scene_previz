@@ -145,7 +145,7 @@ class TestPlugin(unittest.TestCase):
         #delete_project(project_id)
 
 
-#class TestThreeJSExporter(unittest.TestCase):
+class TestThreeJSExporter(unittest.TestCase):
     #@scene('test_exporter.blend')
     #@mkdtemp
     #def test_export(self, tmpdir, scenepath):
@@ -168,12 +168,12 @@ class TestPlugin(unittest.TestCase):
         #self.assertEqual(load(export_path),
                          #load(scenepath.with_suffix('.json')))
 
-    #def test_color2threejs(self):
-        #def c(r, g, b):
-            #return color2threejs(mathutils.Color([r, g, b]))
+    def test_color2threejs(self):
+        def c(r, g, b):
+            return color2threejs(mathutils.Color([r, g, b]))
 
-        #self.assertEqual(c(.13, .19, .21), 2175030)
-        #self.assertEqual(c(.13, 2.47, .21), 2228022)
+        self.assertEqual(c(.13, .19, .21), 2175030)
+        self.assertEqual(c(.13, 2.47, .21), 2228022)
 
 
 class TestHorizonColor(unittest.TestCase):
