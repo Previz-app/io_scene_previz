@@ -107,13 +107,13 @@ class ExportPreviz(utils.BackgroundTasksOperator):
 
     debug_tmpdir = StringProperty(
         name="Temporary directory absolute path",
-        description="Absolute path to temporarily store assets. If empty, a path will be generated automatically.",
+        description="Absolute path to temporarily store assets",
         options={'HIDDEN'}
     )
 
     debug_run_api_requests = BoolProperty(
         name="Run API requests",
-        description="Run the requets againsts the Previz API.",
+        description="Run the requets againsts the Previz API",
         default=True,
         options={'HIDDEN'}
     )
