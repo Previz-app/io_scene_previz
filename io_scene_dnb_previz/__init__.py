@@ -91,14 +91,12 @@ class ExportPreviz(utils.BackgroundTasksOperator):
         name='API token'
     )
 
-    project_id = IntProperty(
-        name='Previz project ID',
-        default=-1
+    project_id = StringProperty(
+        name='Previz project ID'
     )
 
-    scene_id = IntProperty(
+    scene_id = StringProperty(
         name='Previz scene ID',
-        default=-1
     )
 
     debug_cleanup = BoolProperty(
@@ -127,12 +125,7 @@ class ExportPreviz(utils.BackgroundTasksOperator):
 
     @classmethod
     def poll(cls, context):
-        api_root, api_token = previz_preferences(context)
-        api_root_is_valid = len(api_root) > 0
-        api_token_is_valid = len(api_token) > 0
-        active_scene_is_valid = active.is_valid(context)
-
-        return api_root_is_valid and api_token_is_valid and active_scene_is_valid
+        return True # Context check in the future
 
     def build_tasks(self, context):
         tasks = [
