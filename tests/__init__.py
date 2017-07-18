@@ -127,20 +127,20 @@ class TestPluginLoadsCorrectly(unittest.TestCase):
         )
         self.assertTrue(filepath.exists())
 
+@unittest.skip("Not implemented in API v2 yet")
+class TestApi(unittest.TestCase):
+    @scene('test_assets.blend')
+    @mkdtemp
+    @apidecs.tempproject()
+    @apidecs.tempscene()
+    def test_run_export(self, tmpdir, scenepath):
+        project_id = run_create_project(random_project_name())
 
-#class TestApi(unittest.TestCase):
-    #@scene('test_assets.blend')
-    #@mkdtemp
-    #@apidecs.tempproject()
-    #@apidecs.tempscene()
-    #def test_run_export(self, tmpdir, scenepath):
-        #project_id = run_create_project(random_project_name())
-
-        #export_dir = tmpdir / EXPORT_DIRNAME
-        #self.assertIn(run_previz_exporter(export_dir,
-                                          #debug_run_api_requests=True,
-                                          #project_id=project_id), [{'FINISHED'}, {'RUNNING_MODAL'}])
-        #delete_project(project_id)
+        export_dir = tmpdir / EXPORT_DIRNAME
+        self.assertIn(run_previz_exporter(export_dir,
+                                          debug_run_api_requests=True,
+                                          project_id=project_id), [{'FINISHED'}, {'RUNNING_MODAL'}])
+        delete_project(project_id)
 
 
 class TestThreeJSExporter(unittest.TestCase):
