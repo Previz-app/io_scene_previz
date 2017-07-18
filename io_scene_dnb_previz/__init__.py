@@ -868,6 +868,7 @@ def menu_image_upload(self, context):
 
 def register():
     bpy.utils.register_class(ExportPreviz)
+    bpy.utils.register_class(ExportPrevizFromUI)
     bpy.utils.register_class(ExportPrevizFile)
     bpy.utils.register_class(RefreshProjects)
     bpy.utils.register_class(CreateProject)
@@ -883,6 +884,7 @@ def register():
 
 def unregister():
     bpy.utils.unregister_class(ExportPreviz)
+    bpy.utils.register_class(ExportPrevizFromUI)
     bpy.utils.unregister_class(ExportPrevizFile)
     bpy.utils.unregister_class(RefreshProjects)
     bpy.utils.unregister_class(CreateProject)
