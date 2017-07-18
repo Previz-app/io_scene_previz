@@ -15,7 +15,7 @@ from .utils import *
 
 EXPORT_DIRNAME = 'export_tmpdir'
 
-mkdtemp = MakeTempDirectories('unittests-'+io_scene_dnb_previz.__name__)
+mkdtemp = MakeTempDirectories(io_scene_dnb_previz.__name__+'-unittests')
 
 apidecs = build_api_decorators()
 
