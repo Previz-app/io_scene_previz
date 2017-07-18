@@ -146,27 +146,27 @@ class TestPlugin(unittest.TestCase):
 
 
 class TestThreeJSExporter(unittest.TestCase):
-    #@scene('test_exporter.blend')
-    #@mkdtemp
-    #def test_export(self, tmpdir, scenepath):
-        #def load(path):
-            #with path.open() as fp:
-                #s = json.load(fp)
-            #uuid = itertools.count()
-            #for g in s['geometries']:
-                #g['uuid'] = next(uuid)
-            #s['object']['uuid'] = next(uuid)
-            #for o in s['object']['children']:
-                #o['geometry'] = next(uuid)
-                #o['uuid'] = next(uuid)
-            #return s
+    @scene('test_exporter.blend')
+    @mkdtemp
+    def test_export(self, tmpdir, scenepath):
+        def load(path):
+            with path.open() as fp:
+                s = json.load(fp)
+            uuid = itertools.count()
+            for g in s['geometries']:
+                g['uuid'] = next(uuid)
+            s['object']['uuid'] = next(uuid)
+            for o in s['object']['children']:
+                o['geometry'] = next(uuid)
+                o['uuid'] = next(uuid)
+            return s
 
-        #export_path = tmpdir / 'test_export.json'
-        #with export_path.open('w') as fp:
-            #previz.export(build_scene(bpy.context), fp)
+        export_path = tmpdir / 'test_export.json'
+        with export_path.open('w') as fp:
+            previz.export(build_scene(bpy.context), fp)
 
-        #self.assertEqual(load(export_path),
-                         #load(scenepath.with_suffix('.json')))
+        self.assertEqual(load(export_path),
+                         load(scenepath.with_suffix('.json')))
 
     def test_color2threejs(self):
         def c(r, g, b):
