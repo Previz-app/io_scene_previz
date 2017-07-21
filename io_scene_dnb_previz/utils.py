@@ -202,3 +202,10 @@ class TaskRunner(object):
             func, args, kwargs = msg
             TaskRunner.run_function(func, args, kwargs, queue_to_main, queue_is_working)
 
+
+def has_menu_item(items, item):
+    try:
+        next(i for i in items if i[0] == item[0])
+        return True
+    except StopIteration:
+        return False

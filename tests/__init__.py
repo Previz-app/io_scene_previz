@@ -194,3 +194,14 @@ class TestHorizonColor(unittest.TestCase):
     def test_horizon_color(self):
         self.assertEqual(horizon_color(self.context_no_world), None)
         self.assertEqual(horizon_color(self.context_with_world), 2173744)
+
+class TestUtils(unittest.TestCase):
+    def test_has_menu_item(self):
+        items = [
+            ('6ea73cf6-6421-4ebb-aa60-c047fc28b179', 'MeanGirls_2017', 'MeanGirls_2017', 0),
+            ('b642ff62-0751-4453-bfed-557e8ae45b8a', 'e3_x_17', 'e3_x_17', 1),
+            ('8f1b0743-0694-467b-ac33-17f220971329', 'att_salwa', 'att_salwa', 2),
+            ('b3f1f426-bf01-4b07-92db-4b88f305f8e9', 'ffl_2017', 'ffl_2017', 3)
+        ]
+        self.assertTrue(has_menu_item(items, ('b642ff62-0751-4453-bfed-557e8ae45b8a', 'e3_x_17', 'e3_x_17', 1)))
+        self.assertFalse(has_menu_item(items, ('cd384942-6d5e-11e7-a63e-f3fb1683649e', 'other_project', 'other_project', 1)))
