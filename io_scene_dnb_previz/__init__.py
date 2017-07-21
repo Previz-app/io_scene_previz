@@ -518,7 +518,7 @@ class PrevizPreferences(bpy.types.AddonPreferences):
 class Active(object):
     default_team = '[Need to refresh]'
     default_name = 'Select'
-    default_id = -1
+    default_id = 'empty_id'
 
     def __init__(self, teams = []):
         self.teams = teams # teams.projects.scenes
@@ -540,11 +540,14 @@ class Active(object):
 
     def team_menu_items(self):
         def cb(other, context):
-            return self.menu_items(self.teams)
+            return self.menu_items(self.teams, '[No team]')
         return cb
 
     def team_menu_update(self):
         def cb(other, context):
+            projects = self.projects(context)
+            project = projects[0] if len(projects) > 0 else None
+            self.set_project(context, project)
             self.log(context)
         return cb
 
@@ -554,7 +557,7 @@ class Active(object):
         team = self.team(context)
         if not team:
             return []
-        return team.get('projects', [])
+        return team.get('projects')
 
     def project(self, context):
         return self.getitem(
@@ -563,15 +566,19 @@ class Active(object):
         )
 
     def set_project(self, context, project):
-        context.scene.previz_active_project_id = str(project['id'])
+        project_id_str = str(project['id']) if project is not None else Active.default_id
+        context.scene.previz_active_project_id = project_id_str
 
     def project_menu_items(self):
         def cb(other, context):
-            return self.menu_items(self.projects(context))
+            return self.menu_items(self.projects(context), '[No project]')
         return cb
 
     def project_menu_update(self):
         def cb(other, context):
+            scenes = self.scenes(context)
+            scene = scenes[0] if len(scenes) > 0 else None
+            self.set_scene(context, scene)
             self.log(context)
         return cb
 
@@ -590,11 +597,12 @@ class Active(object):
         )
 
     def set_scene(self, context, scene):
-        context.scene.previz_active_scene_id = str(scene['id'])
+        scene_id_str = str(scene['id']) if scene is not None else Active.default_id
+        context.scene.previz_active_scene_id = scene_id_str
 
     def scene_menu_items(self):
         def cb(other, context):
-            return self.menu_items(self.scenes(context))
+            return self.menu_items(self.scenes(context), '[No scene]')
         return cb
 
     def scene_menu_update(self):
@@ -627,7 +635,7 @@ class Active(object):
         return False
 
     @staticmethod
-    def menu_items(items):
+    def menu_items(items, default_item_name):
         number = -1
         ret = []
         for item in items:
@@ -637,6 +645,10 @@ class Active(object):
             name = item[name_key]
             number += 1
             ret.append((id, name, name, number))
+        if len(ret) == 0:
+            number += 1
+            item = (Active.default_id, default_item_name, default_item_name, number)
+            ret.append(item)
         return ret
 
     @staticmethod
