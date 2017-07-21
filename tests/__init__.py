@@ -195,6 +195,7 @@ class TestHorizonColor(unittest.TestCase):
         self.assertEqual(horizon_color(self.context_no_world), None)
         self.assertEqual(horizon_color(self.context_with_world), 2173744)
 
+
 class TestUtils(unittest.TestCase):
     def test_has_menu_item(self):
         items = [
