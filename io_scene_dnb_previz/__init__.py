@@ -332,8 +332,9 @@ class CreateProject(bpy.types.Operator):
 
     @log_execute
     def execute(self, context):
-        project = utils.PrevizProject(self.api_root,
-                                      self.api_token).new_project(self.project_name)
+        team_uuid = active.team(context)['id']
+        p = utils.PrevizProject(self.api_root, self.api_token)
+        project = p.new_project(self.project_name, team_uuid)
         refresh_active(context)
         active.set_project(context, project)
         return {'FINISHED'}
