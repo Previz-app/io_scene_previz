@@ -11,8 +11,8 @@ import bpy
 
 import previz.testsutils
 
-import io_scene_dnb_previz
-from io_scene_dnb_previz.utils import PrevizProject
+import io_scene_previz
+from io_scene_previz.utils import PrevizProject
 
 
 BLENDS_DIR_NAME = 'blends'
@@ -64,10 +64,10 @@ def scene(name):
 
             # Enable addons
 
-            bpy.ops.wm.addon_enable(module=io_scene_dnb_previz.__name__)
+            bpy.ops.wm.addon_enable(module=io_scene_previz.__name__)
 
             # Set API token
-            prefs = bpy.context.user_preferences.addons[io_scene_dnb_previz.__name__].preferences
+            prefs = bpy.context.user_preferences.addons[io_scene_previz.__name__].preferences
             prefs.api_root = os.environ[PREVIZ_API_ROOT_ENVVAR]
             prefs.api_token = os.environ[PREVIZ_API_TOKEN_ENVVAR]
 
@@ -124,7 +124,7 @@ def run_previz_exporter(
         debug_tmpdir=None,
         debug_cleanup=False,
         debug_run_modal=False):
-    api_root, api_token = io_scene_dnb_previz.previz_preferences(bpy.context)
+    api_root, api_token = io_scene_previz.previz_preferences(bpy.context)
     kwargs = {
         'api_root': api_root,
         'api_token': api_token,
@@ -142,19 +142,19 @@ def run_previz_exporter(
 
 
 def run_create_project(project_name):
-    api_root, api_token = io_scene_dnb_previz.previz_preferences(bpy.context)
+    api_root, api_token = io_scene_previz.previz_preferences(bpy.context)
     bpy.ops.export_scene.previz_new_project(api_root=api_root, api_token=api_token, project_name=project_name)
 
     return max(PrevizProject(api_root, api_token).projects(), key=lambda p: p['id'])['id']
 
 
 def delete_project(project_id):
-    api_root, api_token = io_scene_dnb_previz.previz_preferences(bpy.context)
+    api_root, api_token = io_scene_previz.previz_preferences(bpy.context)
     PrevizProject(api_root, api_token, project_id).delete_project()
 
 
 def set_project_state(project_id, state):
-    api_root, api_token = io_scene_dnb_previz.previz_preferences(bpy.context)
+    api_root, api_token = io_scene_previz.previz_preferences(bpy.context)
     PrevizProject(api_root, api_token, project_id).set_state(state)
 
 

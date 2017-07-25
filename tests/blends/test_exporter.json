@@ -59,7 +59,7 @@
      15
     ],
     "metadata": {
-     "generator": "io_scene_dnb_previz",
+     "generator": "io_scene_previz",
      "version": 3
     },
     "name": "NgonGeometry.001",
@@ -221,7 +221,7 @@
      15
     ],
     "metadata": {
-     "generator": "io_scene_dnb_previz",
+     "generator": "io_scene_previz",
      "version": 3
     },
     "name": "NgonGeometry",
@@ -329,7 +329,7 @@
  "images": [],
  "materials": [],
  "metadata": {
-  "generator": "io_scene_dnb_previz",
+  "generator": "io_scene_previz",
   "sourceFile": "test_exporter.blend",
   "type": "Object",
   "version": 4.4

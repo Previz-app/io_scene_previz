@@ -6,16 +6,16 @@ import addon_utils
 import bpy
 import mathutils
 
-import io_scene_dnb_previz
-from io_scene_dnb_previz import *
-from io_scene_dnb_previz.utils import *
-from io_scene_dnb_previz.three_js_exporter import *
+import io_scene_previz
+from io_scene_previz import *
+from io_scene_previz.utils import *
+from io_scene_previz.three_js_exporter import *
 
 from .utils import *
 
 EXPORT_DIRNAME = 'export_tmpdir'
 
-mkdtemp = MakeTempDirectories(io_scene_dnb_previz.__name__+'-unittests')
+mkdtemp = MakeTempDirectories(io_scene_previz.__name__+'-unittests')
 
 apidecs = build_api_decorators()
 
