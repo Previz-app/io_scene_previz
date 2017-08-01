@@ -5,8 +5,6 @@ import threading
 import bpy
 from bpy.props import BoolProperty
 
-from previz import PrevizProject
-
 
 class BackgroundTasksOperator(bpy.types.Operator):
     process_polling_interval = 1
