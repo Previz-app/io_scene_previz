@@ -28,6 +28,7 @@ bl_info = {
     'category': 'Import-Export'
 }
 
+version_string = '.'.join([str(x) for x in bl_info['version']])
 
 TEMPORARY_DIRECTORY_PREFIX = 'blender-{}-'.format(__name__)
 
@@ -673,12 +674,14 @@ class Active(object):
 
 
 active = Active()
+new_plugin_version = None
 
 def refresh_active(context):
     api_root, api_token = previz_preferences(context)
     p = utils.PrevizProject(api_root, api_token)
     active.teams = p.get_all()
-
+    global new_plugin_version
+    new_plugin_version = p.updated_plugin('blender', version_string)
 
 class RefreshProjects(bpy.types.Operator):
     bl_idname = 'export_scene.previz_refresh_projects'
@@ -752,6 +755,11 @@ class PrevizPanel(bpy.types.Panel):
             text='Refresh',
             icon='FILE_REFRESH'
         )
+
+        if new_plugin_version:
+            text = 'New addon: v' + new_plugin_version['version']
+            op = self.layout.operator('wm.url_open', text=text, icon='URL')
+            op.url = new_plugin_version['downloadUrl']
 
 
 ################
