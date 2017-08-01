@@ -1,3 +1,4 @@
+import os
 import pathlib
 import queue
 import shutil
@@ -10,11 +11,12 @@ from bpy.app.handlers import persistent
 from bpy.props import BoolProperty, EnumProperty, IntProperty, StringProperty
 from bpy_extras.io_utils import ExportHelper, path_reference_mode
 
+from . import utils
+if 'VIRTUAL_ENV' in os.environ:
+    utils.append_virtual_env_paths(__name__)
 
-sys.path.append(str(pathlib.Path(__file__).parent))
 import previz
 
-from . import utils
 from . import three_js_exporter
 
 

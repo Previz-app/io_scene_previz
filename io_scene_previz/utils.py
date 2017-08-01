@@ -1,5 +1,8 @@
 import math
+import os
+import pathlib
 import queue
+import sys
 import threading
 
 import bpy
@@ -207,3 +210,21 @@ def has_menu_item(items, item):
         return True
     except StopIteration:
         return False
+
+
+def append_virtual_env_paths(addon_name):
+    def egg_links(dirpath, exclude):
+        exclude_path = dirpath / '{}.egg-link'.format(addon_name)
+        for p in dirpath.glob('*.egg-link'):
+            if p != exclude_path:
+                with p.open() as fd:
+                    new_path = fd.readline().replace('\n', '')
+                    yield new_path
+
+    addon_name = addon_name.replace('_', '-') # eggs are dash-named
+    path = pathlib.Path(os.environ['VIRTUAL_ENV'])
+    v = sys.version_info
+    path /= 'lib/python{}.{}/site-packages'.format(v.major, v.minor)
+    sys.path.append(str(path))
+    for link in egg_links(path, addon_name):
+        sys.path.append(link)
