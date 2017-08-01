@@ -1,5 +1,7 @@
 from setuptools import setup, find_packages
 
+from buildcmds.addon import addon
+
 setup(
     name='io_scene_previz',
 
@@ -27,5 +29,8 @@ setup(
     install_requires=['previz'],
     extras_require={},
     package_data={},
-    data_files=[]
+    data_files=[],
+    cmdclass={
+        'addon': addon
+    }
 )
