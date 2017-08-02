@@ -2,7 +2,6 @@ from distutils.core import Command
 from distutils.dir_util import copy_tree, remove_tree
 from importlib.util import find_spec
 from pathlib import Path
-from pprint import pprint
 
 def spec2path(spec):
     return Path(spec.origin).parent
@@ -39,6 +38,4 @@ class bdist_blender_addon(Command):
         for pycache in build_addon.glob('**/__pycache__'):
             remove_tree(str(pycache))
 
-        # Archive the whole stuff
-        #self.make_archive('yoyo', 'zip', str(build_root), 'yaya')
         self.make_archive(str(addon_archive), 'zip', str(build_lib), addon_name)
