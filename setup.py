@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-from buildcmds.addon import addon
+from buildcmds.addon import bdist_blender_addon
 
 setup(
     name='io_scene_previz',
@@ -25,12 +25,12 @@ setup(
     ],
 
     keywords='previz development 3d scene exporter',
-    packages=find_packages(exclude=['tests']),
+    packages=find_packages(exclude=['buildcmds', 'tests']),
     install_requires=['previz'],
     extras_require={},
     package_data={},
     data_files=[],
     cmdclass={
-        'addon': addon
+        'bdist_blender_addon': bdist_blender_addon
     }
 )
