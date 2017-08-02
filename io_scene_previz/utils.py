@@ -228,3 +228,7 @@ def append_virtual_env_paths(addon_name):
     sys.path.append(str(path))
     for link in egg_links(path, addon_name):
         sys.path.append(link)
+
+def append_included_modules_paths():
+    p = pathlib.Path(__file__).parent
+    sys.path.append(str(p))
