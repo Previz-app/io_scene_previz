@@ -1,6 +1,7 @@
 import os
 import pathlib
 import queue
+import site
 import shutil
 import sys
 import tempfile
@@ -12,10 +13,7 @@ from bpy.props import BoolProperty, EnumProperty, IntProperty, StringProperty
 from bpy_extras.io_utils import ExportHelper, path_reference_mode
 
 from . import utils
-if 'VIRTUAL_ENV' in os.environ:
-    utils.append_virtual_env_paths(__name__)
-else:
-    utils.append_included_modules_paths()
+site.addsitedir(utils.sitedir())
 
 import previz
 

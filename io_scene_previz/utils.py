@@ -212,6 +212,15 @@ def has_menu_item(items, item):
         return False
 
 
+def sitedir():
+    path = pathlib.Path(__file__).parent
+    if 'VIRTUAL_ENV' in os.environ:
+        env = pathlib.Path(os.environ['VIRTUAL_ENV'])
+        v = sys.version_info
+        path = env / 'lib/python{}.{}/site-packages'.format(v.major, v.minor)
+    return str(path.resolve())
+
+
 def append_virtual_env_paths(addon_name):
     def egg_links(dirpath, exclude):
         exclude_path = dirpath / '{}.egg-link'.format(addon_name)
@@ -228,6 +237,7 @@ def append_virtual_env_paths(addon_name):
     sys.path.append(str(path))
     for link in egg_links(path, addon_name):
         sys.path.append(link)
+
 
 def append_included_modules_paths():
     p = pathlib.Path(__file__).parent
