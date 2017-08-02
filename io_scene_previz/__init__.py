@@ -14,6 +14,8 @@ from bpy_extras.io_utils import ExportHelper, path_reference_mode
 from . import utils
 if 'VIRTUAL_ENV' in os.environ:
     utils.append_virtual_env_paths(__name__)
+else:
+    utils.append_included_modules_paths()
 
 import previz
 
