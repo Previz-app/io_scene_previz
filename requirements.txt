@@ -1,2 +1,2 @@
-git+https://github.com/Previz-app/previz-python-api.git@v2
 bumpversion
+previz
