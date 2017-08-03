@@ -2,37 +2,53 @@ Previz Blender integration
 ==========================
 
 
+Development
+-----------
+
+* Create and activate a virtual environment:
+``` sh
+$ pyvenv-3.5 env
+$ source env/bin/activate
+(env) $
+```
+* Install the dependencies:
+``` sh
+(env) $ pip install -r requirements.txt
+```
+* To use a locally cloned `previz-python-api` repository in the same folder than the Blender plugin, replace `requirements.txt` by `requirements-local-previz.txt`
+* Link the `io_scene_dnb_previz` module into [an addons folder](https://www.blender.org/manual/en/getting_started/installing/configuration/directories.html#path-layout).
+* Run `blender` from the virtual environment. The plugin relies on the `VIRTUAL_ENV` environment variable to find its dependencies
+``` sh
+(env) $ blender
+```
+* Activate the plugin in the User Preferences
+* Hit F8 to refresh the plugin code
+
+
 Testing
 -------
 
 Unittesting is made with [tox](https://tox.readthedocs.io/en/latest/). Make sure the `blender` executable is in your `PATH`.
 
 
-Development
------------
-
-* Link the `io_scene_dnb_previz` module into [an addons folder](https://www.blender.org/manual/en/getting_started/installing/configuration/directories.html#path-layout).
-* Activate the plugin in the User Preferences
-* Hit F8 to refresh the plugin code
-
-
 Release
 -------
 
-Copy the `previz` module into the `io_scene_dnd_previz` folder and zip that folder. Make sure that no stray __pycache__ files lying around. On Linux:
+`setup.py` defines a `bdist_blender_addon` command that build an addon archive in the `dist` directory.
 
 ```sh
-$ cd /path/to/repo
-$ git clean -f -d -x
-$ cd blender
-$ cp -r ../previz/previz io_scene_dnb_previz
-$ grep version io_scene_dnb_previz/__init__.py
-    'version': (0, 0, 5),
-$ zip -r io_scene_dnb_previz-v0.0.5.zip io_scene_dnb_previz
-  adding: io_scene_dnb_previz/ (stored 0%)
-  adding: io_scene_dnb_previz/utils.py (deflated 74%)
-  adding: io_scene_dnb_previz/previz/ (stored 0%)
-  adding: io_scene_dnb_previz/previz/__init__.py (deflated 74%)
-  adding: io_scene_dnb_previz/three_js_exporter.py (deflated 65%)
-  adding: io_scene_dnb_previz/__init__.py (deflated 78%)
-```
+# Build from a clean virtual env
+$ pyvenv-3.5 env
+$ source env/bin/activate
+
+# Install the dependencies
+(env) $ pip install -r requirements.txt
+
+# Run [bumpversion](https://github.com/peritus/bumpversion) to update release version
+# This will add a new git tag and will commit the new version
+# Version types are: major, minor, patch
+(env) $ bumpversion patch
+
+# Build the addon archive
+(env) $ python setup.py bdist_blender_addon
+(env) $ ls dist
