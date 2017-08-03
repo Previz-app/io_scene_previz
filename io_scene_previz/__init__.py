@@ -250,9 +250,9 @@ class ExportPreviz(utils.BackgroundTasksOperator):
             return {'CANCELLED'}
 
         self.g['property_tmpdir'] = self.debug_tmpdir
-        self.g['project'] = utils.PrevizProject(self.api_root,
-                                                self.api_token,
-                                                self.project_id)
+        self.g['project'] = previz.PrevizProject(self.api_root,
+                                                 self.api_token,
+                                                 self.project_id)
         self.g['scene_id'] = self.scene_id
 
         return super(ExportPreviz, self).execute(context)
@@ -336,7 +336,7 @@ class CreateProject(bpy.types.Operator):
     @log_execute
     def execute(self, context):
         team_uuid = active.team(context)['id']
-        p = utils.PrevizProject(self.api_root, self.api_token)
+        p = previz.PrevizProject(self.api_root, self.api_token)
         project = p.new_project(self.project_name, team_uuid)
         refresh_active(context)
         active.set_project(context, project)
@@ -376,9 +376,9 @@ class CreateScene(bpy.types.Operator):
     @log_execute
     def execute(self, context):
         project_id = active.project(context)['id']
-        api = utils.PrevizProject(self.api_root,
-                                  self.api_token,
-                                  project_id)
+        api = previz.PrevizProject(self.api_root,
+                                   self.api_token,
+                                   project_id)
         scene = api.new_scene(self.scene_name)
         refresh_active(context)
         active.set_scene(context, scene)
@@ -438,7 +438,7 @@ class UploadImage(utils.BackgroundTasksOperator):
         def task():
             def progress_callback(encoder):
                 print('Uploading {} {} / {}'.format(str(filepath), encoder.bytes_read, encoder.len))
-            p = utils.PrevizProject(api_root, api_token, project_id)
+            p = previz.PrevizProject(api_root, api_token, project_id)
             p.upload_asset(filepath.name, filepath.open('rb'), progress_callback)
         return task
 
@@ -680,7 +680,7 @@ new_plugin_version = None
 
 def refresh_active(context):
     api_root, api_token = previz_preferences(context)
-    p = utils.PrevizProject(api_root, api_token)
+    p = previz.PrevizProject(api_root, api_token)
     active.teams = p.get_all()
     global new_plugin_version
     new_plugin_version = p.updated_plugin('blender', version_string)
