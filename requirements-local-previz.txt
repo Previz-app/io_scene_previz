@@ -1,2 +1,3 @@
 -e ../previz-python-api
+-r requirements.txt
 -e .
