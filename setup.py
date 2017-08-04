@@ -15,16 +15,15 @@ setup(
     author_email='info@previz.co',
     license='MIT',
 
-    # See https://pypi.python.org/pypi?%3Aaction=list_classifiers
     classifiers=[
-        'Development Status :: 3 - Alpha',
-        'Intended Audience :: Developers',
+        'Development Status :: 4 - Beta',
+        'Intended Audience :: End Users/Desktop',
         'Topic :: Multimedia :: Graphics :: 3D Modeling',
         'License :: OSI Approved :: MIT License',
-        'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3 :: Only'
     ],
 
-    keywords='previz development 3d scene exporter',
+    keywords='previz 3d scene exporter',
     packages=find_packages(exclude=['tools.distutils.command', 'tests']),
     install_requires=['previz'],
     extras_require={},
