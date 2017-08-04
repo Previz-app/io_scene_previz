@@ -1,2 +1,3 @@
-bumpversion
 previz
+-r requirements-common.txt
+
