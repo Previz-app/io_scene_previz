@@ -12,11 +12,9 @@ class bdist_blender_addon(Command):
     sub_commands = (('build', lambda self: True),)
 
     def initialize_options(self):
-        print('addon.initialize_options')
         self.include_modules = []
 
     def finalize_options(self):
-        print('addon.finalize_options')
         if type(self.include_modules) is str and len(self.include_modules) > 0:
             self.include_modules = self.include_modules.split(',')
 
