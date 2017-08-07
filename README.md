@@ -11,11 +11,14 @@ $ pyvenv-3.5 env
 $ source env/bin/activate
 (env) $
 ```
+* To use a locally cloned `previz-python-api` repository, `pip install` it as a linked / editable dependencies before installing the other dependencies:
+```
+(env) $ pip install -e /path/to/previz-python-wrapper
+```
 * Install the dependencies:
 ``` sh
 (env) $ pip install -r requirements.txt
 ```
-* To use a locally cloned `previz-python-api` repository in the same folder than the Blender plugin, replace `requirements.txt` by `requirements-local-previz.txt`
 * Link the `io_scene_dnb_previz` module into [an addons folder](https://www.blender.org/manual/en/getting_started/installing/configuration/directories.html#path-layout).
 * Run `blender` from the virtual environment. The plugin relies on the `VIRTUAL_ENV` environment variable to find its dependencies
 ``` sh
