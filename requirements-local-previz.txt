@@ -1,2 +1,0 @@
--e ../previz-python-api
--r requirements-common.txt
