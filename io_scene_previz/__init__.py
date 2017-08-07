@@ -141,12 +141,15 @@ class ExportPreviz(utils.BackgroundTasksOperator):
         if self.debug_run_api_requests:
             tasks.extend([
                 {'func': self.build_task_report('starting API calls')},
+                {'func': self.build_task_report('getting scene JSON url')},
+                {'func': ExportPreviz.task_get_scene_json_url,
+                 'run_in_subprocess': True},
                 {'func': self.build_task_report('uploading scene')},
                 {'func': ExportPreviz.task_update_previz_scene,
                  'run_in_subprocess': True},
-                {'func': self.build_task_report('uploading assets')},
-                {'func': ExportPreviz.task_update_previz_assets,
-                 'run_in_subprocess': True},
+                #{'func': self.build_task_report('uploading assets')},
+                #{'func': ExportPreviz.task_update_previz_assets,
+                 #'run_in_subprocess': True},
                 {'func': self.build_task_report('updating state')},
                 {'func': self.build_task_report('done all API calls')}
             ])
@@ -200,9 +203,15 @@ class ExportPreviz(utils.BackgroundTasksOperator):
         return g
 
     @staticmethod
+    def task_get_scene_json_url(g):
+        scene = g['project'].scene(g['scene_id'], include=[])
+        g['scene_json'] = scene['jsonUrl']
+        return g
+
+    @staticmethod
     def task_update_previz_scene(g):
         p = utils.ThreeJSExportPaths(g['tmpdir'])
-        g['project'].update_scene(g['scene_id'], p.scene.name, p.scene.open('rb'))
+        g['project'].update_scene(g['scene_json'], p.scene.open('r'))
         return g
 
     @staticmethod
@@ -782,14 +791,14 @@ def register():
     bpy.utils.register_class(RefreshProjects)
     bpy.utils.register_class(CreateProject)
     bpy.utils.register_class(CreateScene)
-    bpy.utils.register_class(UploadImage)
+    #bpy.utils.register_class(UploadImage)
 
     bpy.utils.register_class(PrevizPreferences)
 
     bpy.utils.register_class(PrevizPanel)
 
     bpy.types.INFO_MT_file_export.append(menu_export)
-    bpy.types.IMAGE_MT_image.append(menu_image_upload)
+    #bpy.types.IMAGE_MT_image.append(menu_image_upload)
 
 def unregister():
     bpy.utils.unregister_class(ExportPreviz)
@@ -798,11 +807,11 @@ def unregister():
     bpy.utils.unregister_class(RefreshProjects)
     bpy.utils.unregister_class(CreateProject)
     bpy.utils.unregister_class(CreateScene)
-    bpy.utils.unregister_class(UploadImage)
+    #bpy.utils.unregister_class(UploadImage)
 
     bpy.utils.unregister_class(PrevizPreferences)
 
     bpy.utils.unregister_class(PrevizPanel)
 
     bpy.types.INFO_MT_file_export.remove(menu_export)
-    bpy.types.IMAGE_MT_image.remove(menu_image_upload)
+    #bpy.types.IMAGE_MT_image.remove(menu_image_upload)
