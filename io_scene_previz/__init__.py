@@ -23,7 +23,7 @@ from . import three_js_exporter
 bl_info = {
     'name': "Previz integration",
     'author': "Previz (info@previz.co)",
-    'version': (0, 0, 8),
+    'version': (1, 0, 0),
     'blender': (2, 76, 0),
     'location': "File > Export",
     'description': "Upload scenes to Previz.",
