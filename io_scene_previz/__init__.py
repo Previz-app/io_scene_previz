@@ -687,10 +687,34 @@ class Active(object):
 active = Active()
 new_plugin_version = None
 
+def extract(data, next_name = None):
+    ret = {
+        'id': data['id'],
+        'title': data['title']
+    }
+    if next_name is None:
+        return ret
+
+    ret[next_name] = []
+    return ret, ret[next_name]
+
+def extract_all(teams_data):
+    teams = []
+    for t in teams_data:
+        team, projects = extract(t, 'projects')
+        teams.append(team)
+        for p in t['projects']:
+            project, scenes = extract(p, 'scenes')
+            projects.append(project)
+            for s in p['scenes']:
+                scene = extract(s)
+                scenes.append(scene)
+    return teams
+
 def refresh_active(context):
     api_root, api_token = previz_preferences(context)
     p = previz.PrevizProject(api_root, api_token)
-    active.teams = p.get_all()
+    active.teams = extract_all(p.get_all())
     global new_plugin_version
     new_plugin_version = p.updated_plugin('blender', version_string)
 
