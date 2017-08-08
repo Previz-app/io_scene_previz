@@ -533,8 +533,8 @@ class Active(object):
     default_name = 'Select'
     default_id = 'empty_id'
 
-    def __init__(self, teams = []):
-        self.teams = teams # teams.projects.scenes
+    def __init__(self):
+        self.teams = [] # Structure teams.projects.scenes
 
     @property
     def is_refreshed(self):
