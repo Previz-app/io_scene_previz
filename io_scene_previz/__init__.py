@@ -520,7 +520,8 @@ class PrevizPreferences(bpy.types.AddonPreferences):
         row.prop(self, 'api_token')
 
         op = layout.operator('wm.url_open', text="Tokens", icon='URL')
-        op.url = 'https://app.previz.co/settings#/api'
+        # Should be dynamic, depending on api_root
+        op.url = 'https://app.previz.co/account/api'
 
 
 #########
