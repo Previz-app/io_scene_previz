@@ -211,7 +211,7 @@ class ExportPreviz(utils.BackgroundTasksOperator):
     @staticmethod
     def task_update_previz_scene(g):
         p = utils.ThreeJSExportPaths(g['tmpdir'])
-        g['project'].update_scene(g['scene_json'], p.scene.open('r'))
+        g['project'].update_scene(g['scene_json'], p.scene.open('rb'))
         return g
 
     @staticmethod
