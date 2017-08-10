@@ -211,7 +211,8 @@ class ExportPreviz(utils.BackgroundTasksOperator):
     @staticmethod
     def task_update_previz_scene(g):
         p = utils.ThreeJSExportPaths(g['tmpdir'])
-        g['project'].update_scene(g['scene_json'], p.scene.open('rb'))
+        with p.scene.open('rb') as fd:
+            g['project'].update_scene(g['scene_json'], fd)
         return g
 
     @staticmethod
@@ -224,7 +225,8 @@ class ExportPreviz(utils.BackgroundTasksOperator):
                 g['project'].delete_asset(online_asset['id'])
 
         for local_asset in p.assets:
-            g['project'].upload_asset(local_asset.open('rb'))
+            with local_asset.open('rb') as fd:
+                g['project'].upload_asset()
 
         return g
 
@@ -448,7 +450,8 @@ class UploadImage(utils.BackgroundTasksOperator):
             def progress_callback(encoder):
                 print('Uploading {} {} / {}'.format(str(filepath), encoder.bytes_read, encoder.len))
             p = previz.PrevizProject(api_root, api_token, project_id)
-            p.upload_asset(filepath.name, filepath.open('rb'), progress_callback)
+            with filepath.open('rb') as fd:
+                p.upload_asset(filepath.name, fd, progress_callback)
         return task
 
     def build_task_done_message(self, filepath):
