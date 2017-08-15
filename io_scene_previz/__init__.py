@@ -134,33 +134,33 @@ class ExportPreviz(utils.BackgroundTasksOperator):
         tasks = [
             {'func': ExportPreviz.task_make_tmpdir},
             {'func': self.build_task_report('Made temporary directory {tmpdir}')},
-            {'func': self.build_task_report('exporting three.js JSON')},
+            {'func': self.build_task_report('Exporting three.js JSON')},
             {'func': ExportPreviz.task_export_three_js}
         ]
 
         if self.debug_run_api_requests:
             tasks.extend([
-                {'func': self.build_task_report('starting API calls')},
-                {'func': self.build_task_report('getting scene JSON url')},
+                {'func': self.build_task_report('Starting API calls')},
+                {'func': self.build_task_report('Getting scene JSON url')},
                 {'func': ExportPreviz.task_get_scene_json_url,
                  'run_in_subprocess': True},
-                {'func': self.build_task_report('uploading scene')},
+                {'func': self.build_task_report('Uploading scene')},
                 {'func': ExportPreviz.task_update_previz_scene,
                  'run_in_subprocess': True},
                 #{'func': self.build_task_report('uploading assets')},
                 #{'func': ExportPreviz.task_update_previz_assets,
                  #'run_in_subprocess': True},
-                {'func': self.build_task_report('updating state')},
-                {'func': self.build_task_report('done all API calls')}
+                {'func': self.build_task_report('Updating state')},
+                {'func': self.build_task_report('Done all API calls')}
             ])
 
         if self.debug_cleanup:
             tasks.extend([
                 {'func': ExportPreviz.task_cleanup_tmpdir},
-                {'func': self.build_task_report('removed temporary directory {tmpdir}')}
+                {'func': self.build_task_report('Removed temporary directory {tmpdir}')}
             ])
 
-        tasks.append({'func': self.build_task_report('done')})
+        tasks.append({'func': self.build_task_report('Done')})
 
         self.g['context'] = context # This is probably not the safest, but only a main process task uses it
 
@@ -456,7 +456,7 @@ class UploadImage(utils.BackgroundTasksOperator):
 
     def build_task_done_message(self, filepath):
         def task():
-            self.report({'INFO'}, 'Previz: uploaded asset {!s}'.format(filepath))
+            self.report({'INFO'}, 'Previz: Uploaded asset {!s}'.format(filepath))
         return task
 
     def task_done(self, result):
@@ -466,7 +466,7 @@ class UploadImage(utils.BackgroundTasksOperator):
         return (), {}
 
     def cancel(self, context):
-        self.report({'INFO'}, 'Previz asset {} export cancelled'.format(self.filepath))
+        self.report({'INFO'}, 'Previz: Asset {} export cancelled'.format(self.filepath))
         super(UploadImage, self).cancel(context)
 
     @log_execute
