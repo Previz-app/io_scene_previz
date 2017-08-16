@@ -92,9 +92,8 @@ class Panel(bpy.types.Panel):
 
         for id, task in tasks_runner.tasks.items():
             row = self.layout.row()
-            row.label(task.label)
-            row.label(task.state)
-            row.operator('export_scene.previz_cancel_task').task_id = id
+            row.label('{} ({})'.format(task.label, task.state))
+            row.operator('export_scene.previz_cancel_task', text='', icon='CANCEL').task_id = id
 
 
 def register():
