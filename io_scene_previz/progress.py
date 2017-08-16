@@ -1,4 +1,4 @@
-import datetime
+import time
 
 import addon_utils
 import bpy
@@ -59,7 +59,7 @@ class Task(object):
         pass
 
     def cancel(self):
-        self.finished_time = datetime.datetime.now()
+        self.finished_time = time.time()
         self.state = 'Cancelled'
         self.status = CANCELLED
 
@@ -117,11 +117,15 @@ class Panel(bpy.types.Panel):
     bl_region_type = "WINDOW"
     bl_context = "scene"
 
+    cancelled_task_display_timeout = 2 # XXX Needs to be an hidden user property
+
     def draw(self, context):
         self.layout.operator(
             'export_scene.previz_test',
             text='Progress test'
         )
+
+        self.remove_finished_tasks()
 
         for id, task in tasks_runner.tasks.items():
             row = self.layout.row()
@@ -139,6 +143,13 @@ class Panel(bpy.types.Panel):
                     text='',
                     icon='X').task_id = id
 
+    def remove_finished_tasks(self):
+        def is_timed_out(task):
+            return task.status in (DONE, CANCELLED) \
+                and (time.time() - task.finished_time) > self.cancelled_task_display_timeout
+        ids = [id for id, task in tasks_runner.tasks.items() if is_timed_out(task)]
+        for id in ids:
+            tasks_runner.remove_task(id)
 
 def register():
     bpy.utils.register_class(Test)
