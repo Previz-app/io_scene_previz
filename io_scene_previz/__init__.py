@@ -16,7 +16,7 @@ from . import utils
 site.addsitedir(utils.sitedir())
 
 import previz
-
+from . import progress
 from . import three_js_exporter
 
 
@@ -828,6 +828,8 @@ def register():
     bpy.types.INFO_MT_file_export.append(menu_export)
     #bpy.types.IMAGE_MT_image.append(menu_image_upload)
 
+    progress.register()
+
 def unregister():
     bpy.utils.unregister_class(ExportPreviz)
     bpy.utils.unregister_class(ExportPrevizFromUI)
@@ -843,3 +845,5 @@ def unregister():
 
     bpy.types.INFO_MT_file_export.remove(menu_export)
     #bpy.types.IMAGE_MT_image.remove(menu_image_upload)
+
+    progress.unregister()
