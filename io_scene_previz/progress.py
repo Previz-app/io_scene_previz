@@ -18,9 +18,11 @@ ids = id_generator()
 class TasksRunner(object):
     def __init__(self):
         self.tasks = {}
+        self.on_task_changed = []
 
     def add_task(self, task):
         id = next(ids)
+        task.tasks_runner = self
         self.tasks[id] = task
         return id
 
@@ -31,10 +33,14 @@ class TasksRunner(object):
             raise RunTimeError(msg)
         del self.tasks[task_id]
 
+    def notify_change(self, task):
+        for cb in self.on_task_changed:
+            cb(self, task)
+
     def run(self):
         pass
 
-tasks_runner = TasksRunner()
+tasks_runner = None
 
 IDLE = 'idle'
 STARTING = 'starting'
@@ -54,9 +60,12 @@ class Task(object):
         self.progress = None
         self.finished_time = None
         self.is_cancellable = True
+        self.tasks_runner = None
 
     def run(self):
-        pass
+        self.state = 'Running'
+        self.status = RUNNING
+        self.notify()
 
     def cancel(self):
         self.finished_time = time.time()
@@ -70,6 +79,23 @@ class Task(object):
     def tick(self):
         pass
 
+    def notify(self):
+        self.tasks_runner.notify_change(self)
+
+
+class DebugSyncTask(Task):
+    def __init__(self):
+        Task.__init__(self)
+
+    def run(self):
+        super().run()
+        for ms in range(0, 1100, 100):
+            s = ms / 1000
+            time.sleep(s)
+            self.label = 'task {}'.format(s)
+            self.progress = s
+            self.notify()
+
 
 class Test(bpy.types.Operator):
     bl_idname = 'export_scene.previz_test'
@@ -77,7 +103,9 @@ class Test(bpy.types.Operator):
 
     def execute(self, context):
         self.report({'INFO'}, 'Previz: progress.Test')
-        tasks_runner.add_task(Task())
+        task = DebugSyncTask()
+        tasks_runner.add_task(task)
+        task.run()
         return {'FINISHED'}
 
 
@@ -113,6 +141,7 @@ class RemoveTask(bpy.types.Operator):
 
 class Panel(bpy.types.Panel):
     bl_label = "PrevizProgress"
+    bl_idname = "SCENE_PT_previz_test"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
@@ -151,11 +180,20 @@ class Panel(bpy.types.Panel):
         for id in ids:
             tasks_runner.remove_task(id)
 
+
 def register():
     bpy.utils.register_class(Test)
     bpy.utils.register_class(CancelTask)
     bpy.utils.register_class(RemoveTask)
     bpy.utils.register_class(Panel)
+
+    global tasks_runner
+    tasks_runner = TasksRunner()
+
+    def refresh_panel(*args, **kwarsg):
+        print('refresh_panel')
+        bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
+    tasks_runner.on_task_changed.append(refresh_panel)
 
 
 def unregister():
