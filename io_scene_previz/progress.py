@@ -1,4 +1,7 @@
+import queue
+import random
 import time
+import threading
 
 import addon_utils
 import bpy
@@ -106,13 +109,74 @@ class DebugSyncTask(Task):
         self.done()
 
 
+REQUEST_CANCEL = 0
+RESPOND_CANCELLED = 1
+
+class DebugAsyncTask(Task):
+    def __init__(self):
+        Task.__init__(self)
+
+        self.queue_to_worker = queue.Queue()
+        self.queue_to_main = queue.Queue()
+        self.thread = threading.Thread(target=DebugAsyncTask.thread_run,
+                                       args=(self.queue_to_worker,
+                                             self.queue_to_main))
+
+    def run(self):
+        print('MAIN: Starting thread')
+        self.thread.start()
+        print('MAIN: Started thread')
+
+    def cancel(self):
+        self.state = 'Cancelling'
+        self.status = CANCELLING
+        self.notify()
+        self.queue_to_worker.put(REQUEST_CANCEL)
+
+    @staticmethod
+    def thread_run(queue_to_worker, queue_to_main):
+        print('THREAD: Starting')
+        i = 0
+        while True:
+            while not queue_to_worker.empty():
+                msg = queue_to_worker.get()
+                if msg == REQUEST_CANCEL:
+                    queue_to_main.put(RESPOND_CANCELLED)
+                    queue_to_worker.task_done()
+                    return
+
+            i += 1
+            s = random.random()*5
+            msg = (i, s)
+            queue_to_main.put(msg)
+            print('THREAD: Sleep {} {:.2}'.format(*msg))
+            time.sleep(s)
+        print('THREAD: Stopping')
+
+    def tick(self):
+        while not queue_to_main.empty():
+            msg = queue_to_main.get()
+
+            if not self.is_finished:
+                if msg == RESPOND_CANCELLED:
+                    self.state = 'Cancelled'
+                    self.status = CANCELLED
+                    self.notify()
+
+                if type(msg) is tuple:
+                    self.label = 'Sleep: {} {:.2}'.format(*msg)
+                    self.notify()
+
+            queue_to_main.task_done()
+
+
 class Test(bpy.types.Operator):
     bl_idname = 'export_scene.previz_test'
     bl_label = 'Refresh Previz projects'
 
     def execute(self, context):
         self.report({'INFO'}, 'Previz: progress.Test')
-        task = DebugSyncTask()
+        task = DebugAsyncTask()
         tasks_runner.add_task(task)
         return {'FINISHED'}
 
