@@ -97,12 +97,13 @@ class DebugSyncTask(Task):
 
     def run(self):
         super().run()
-        for ms in range(0, 1100, 100):
+        for ms in range(0, 510, 100):
             s = ms / 1000
             time.sleep(s)
-            self.label = 'task {}'.format(s)
-            self.progress = s
+            self.label = 'task {}'.format(s*2)
+            self.progress = s*2
             self.notify()
+        self.done()
 
 
 class Test(bpy.types.Operator):
@@ -182,7 +183,7 @@ class Panel(bpy.types.Panel):
     def remove_finished_tasks(self):
         def is_timed_out(task):
             return task.status in (DONE, CANCELLED) \
-                and (time.time() - task.finished_time) > self.cancelled_task_display_timeout
+                   and (time.time() - task.finished_time) > self.cancelled_task_display_timeout
         ids = [id for id, task in tasks_runner.tasks.items() if is_timed_out(task)]
         for id in ids:
             tasks_runner.remove_task(id)
