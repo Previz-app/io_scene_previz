@@ -1,7 +1,9 @@
 import queue
 import random
+import sys
 import time
 import threading
+import traceback
 
 import addon_utils
 import bpy
@@ -65,7 +67,7 @@ class TasksRunner(object):
         task = self.tasks[task_id]
         if not task.is_finished:
             msg = 'Cannot remove unfinished task {!r}'.format(task.label)
-            raise RunTimeError(msg)
+            raise RuntimeError(msg)
         del self.tasks[task_id]
 
     def notify_change(self, task):
@@ -112,6 +114,13 @@ class Task(object):
         self.status = DONE
         self.notify()
 
+    def set_error(self, exc_info):
+        self.finished_time = time.time()
+        self.error = exc_info
+        self.state = 'Error'
+        self.status = ERROR
+        self.notify()
+
     @property
     def is_finished(self):
         return self.status in (DONE, CANCELLED, ERROR)
@@ -142,6 +151,7 @@ REQUEST_CANCEL = 0
 RESPOND_CANCELLED = 1
 TASK_DONE = 2
 TASK_UPDATE = 3
+TASK_ERROR = 4
 
 class DebugAsyncTask(Task):
     def __init__(self):
@@ -167,22 +177,28 @@ class DebugAsyncTask(Task):
     @staticmethod
     def thread_run(queue_to_worker, queue_to_main):
         print('THREAD: Starting')
-        for i in range(1, 11):
-            while not queue_to_worker.empty():
-                msg, data = queue_to_worker.get()
-                if msg == REQUEST_CANCEL:
-                    queue_to_main.put((RESPOND_CANCELLED, None))
-                    queue_to_worker.task_done()
-                    return
+        try:
+            for i in range(1, 11):
+                if i == 3:
+                    raise RuntimeError('Damn yeah, here I raise')
+                while not queue_to_worker.empty():
+                    msg, data = queue_to_worker.get()
+                    if msg == REQUEST_CANCEL:
+                        queue_to_main.put((RESPOND_CANCELLED, None))
+                        queue_to_worker.task_done()
+                        return
 
-            s = random.random()/2
-            msg = (i, s)
-            queue_to_main.put((TASK_UPDATE, msg))
-            print('THREAD: Sleep {} {:.2}'.format(*msg))
-            time.sleep(s)
-
-        queue_to_main.put((TASK_DONE, None))
-        print('THREAD: Stopping')
+                s = random.random()/2
+                msg = (i, s)
+                queue_to_main.put((TASK_UPDATE, msg))
+                print('THREAD: Sleep {} {:.2}'.format(*msg))
+                time.sleep(s)
+            queue_to_main.put((TASK_DONE, None))
+        except Exception as err:
+            print('****** CAUGHT')
+            queue_to_main.put((TASK_ERROR, sys.exc_info()))
+        finally:
+            print('THREAD: Stopping')
 
     def tick(self):
         print('DebugAsyncTask.tick')
@@ -204,6 +220,11 @@ class DebugAsyncTask(Task):
                 if msg == TASK_UPDATE:
                     self.label = 'Sleep: {} {:.2}'.format(*data)
                     self.notify()
+
+                if msg == TASK_ERROR:
+                    print('Error ---------')
+                    exc_info = data
+                    self.set_error(exc_info)
 
             self.queue_to_main.task_done()
 
@@ -234,6 +255,24 @@ class CancelTask(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class ShowTaskError(bpy.types.Operator):
+    bl_idname = 'export_scene.previz_show_task_error'
+    bl_label = 'Cancel Previz task'
+
+    task_id = IntProperty(
+        name = 'Task ID',
+        default = -1
+    )
+
+    def execute(self, context):
+        self.report({'INFO'}, 'Previz: Show task error {}'.format(self.task_id))
+        tb = tasks_runner.tasks[self.task_id].error[2]
+        print('LOG START ----')
+        print(''.join(traceback.format_tb(tb)))
+        print('LOG END ------')
+        return {'FINISHED'}
+
+
 class RemoveTask(bpy.types.Operator):
     bl_idname = 'export_scene.previz_remove_task'
     bl_label = 'Remove Previz task'
@@ -261,15 +300,15 @@ class ManageQueue(bpy.types.Operator):
         self.timer = None
 
     def execute(self, context):
-        print('ManageQueue.execute')
+        #print('ManageQueue.execute')
         if tasks_runner.is_empty:
             self.cleanup(context)
-            print('ManageQueue.execute FINISHED')
+            #print('ManageQueue.execute FINISHED')
             return {'FINISHED'}
         self.register_timer(context)
         context.window_manager.modal_handler_add(self)
         #tasks_runner.tick()
-        print('ManageQueue.execute RUNNING_MODAL')
+        #print('ManageQueue.execute RUNNING_MODAL')
         return {'RUNNING_MODAL'}
 
     def cancel(self, context):
@@ -277,7 +316,7 @@ class ManageQueue(bpy.types.Operator):
 
     def modal(self, context, event):
         if event.type == 'ESC':
-            print('ManageQueue.modal CANCELLED')
+            #print('ManageQueue.modal CANCELLED')
             return {'CANCELLED'}
 
         if event.type == 'TIMER':
@@ -288,10 +327,10 @@ class ManageQueue(bpy.types.Operator):
     def handle_timer_event(self, context, event):
         if tasks_runner.is_empty:
             self.cleanup(context)
-            print('ManageQueue.handle_timer_event FINISHED')
+            #print('ManageQueue.handle_timer_event FINISHED')
             return {'FINISHED'}
         tasks_runner.tick()
-        print('ManageQueue.handle_timer_event RUNNING_MODAL')
+        #print('ManageQueue.handle_timer_event RUNNING_MODAL')
         return {'RUNNING_MODAL'}
 
     def cleanup(self, context):
@@ -300,12 +339,12 @@ class ManageQueue(bpy.types.Operator):
 
     def register_timer(self, context):
         if self.timer is None:
-            print('ManageQueue.register_timer')
+            #print('ManageQueue.register_timer')
             self.timer = context.window_manager.event_timer_add(self.process_polling_interval, context.window)
 
     def unregister_timer(self, context):
         if self.timer is not None:
-            print('ManageQueue.unregister_timer')
+            #print('ManageQueue.unregister_timer')
             context.window_manager.event_timer_remove(self.timer)
             self.timer = None
 
@@ -327,6 +366,12 @@ class Panel(bpy.types.Panel):
             row = self.layout.row()
             row.label('{} ({})'.format(task.label, task.state))
 
+            if task.status == ERROR:
+                row.operator(
+                    'export_scene.previz_show_task_error',
+                    text='',
+                    icon='ERROR').task_id = id
+
             if task.is_cancellable and not task.is_finished:
                 row.operator(
                     'export_scene.previz_cancel_task',
@@ -346,6 +391,7 @@ def register():
     bpy.utils.register_class(RemoveTask)
     bpy.utils.register_class(Panel)
     bpy.utils.register_class(ManageQueue)
+    bpy.utils.register_class(ShowTaskError)
 
     global tasks_runner
     tasks_runner = TasksRunner()
@@ -361,3 +407,4 @@ def unregister():
     bpy.utils.unregister_class(RemoveTask)
     bpy.utils.unregister_class(Panel)
     bpy.utils.unregister_class(ManageQueue)
+    bpy.utils.unregister_class(ShowTaskError)
