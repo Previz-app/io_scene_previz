@@ -211,6 +211,63 @@ class RemoveTask(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class ManageQueue(bpy.types.Operator):
+    bl_idname = 'export_scene.previz_manage_queue'
+    bl_label = 'Manage Previz task queue'
+
+    process_polling_interval = 1 # Needs to be a debug User Preferences flag
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.timer = None
+
+    def execute(self, context):
+        print('ManageQueue.execute')
+        if tasks_runner.is_empty:
+            self.cleanup(context)
+            print('ManageQueue.execute FINISHED')
+            return {'FINISHED'}
+        self.register_timer(context)
+        context.window_manager.modal_handler_add(self)
+        #tasks_runner.tick()
+        print('ManageQueue.execute RUNNING_MODAL')
+        return {'RUNNING_MODAL'}
+
+    def modal(self, context, event):
+        if event.type == 'ESC':
+            print('ManageQueue.modal CANCELLED')
+            return {'CANCELLED'}
+
+        if event.type == 'TIMER':
+            return self.handle_timer_event(context, event)
+
+        return {'PASS_THROUGH'}
+
+    def handle_timer_event(self, context, event):
+        if tasks_runner.is_empty:
+            self.cleanup(context)
+            print('ManageQueue.handle_timer_event FINISHED')
+            return {'FINISHED'}
+        tasks_runner.tick()
+        print('ManageQueue.handle_timer_event RUNNING_MODAL')
+        return {'RUNNING_MODAL'}
+
+    def cleanup(self, context):
+        self.unregister_timer(context)
+
+    def register_timer(self, context):
+        if self.timer is None:
+            print('ManageQueue.register_timer')
+            self.timer = context.window_manager.event_timer_add(self.process_polling_interval, context.window)
+
+    def unregister_timer(self, context):
+        if self.timer is not None:
+            print('ManageQueue.unregister_timer')
+            context.window_manager.event_timer_remove(self.timer)
+            self.timer = None
+
+
 class Panel(bpy.types.Panel):
     bl_label = "PrevizProgress"
     bl_idname = "SCENE_PT_previz_test"
@@ -258,6 +315,7 @@ def register():
     bpy.utils.register_class(CancelTask)
     bpy.utils.register_class(RemoveTask)
     bpy.utils.register_class(Panel)
+    bpy.utils.register_class(ManageQueue)
 
     global tasks_runner
     tasks_runner = TasksRunner()
@@ -272,3 +330,4 @@ def unregister():
     bpy.utils.unregister_class(CancelTask)
     bpy.utils.unregister_class(RemoveTask)
     bpy.utils.unregister_class(Panel)
+    bpy.utils.unregister_class(ManageQueue)
