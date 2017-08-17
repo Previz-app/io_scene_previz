@@ -30,7 +30,18 @@ class TasksRunner(object):
 
         task.run()
 
+        if len(self.tasks) == 1:
+            bpy.ops.export_scene.previz_manage_queue()
+
         return id
+
+    def tick(self):
+        for task in self.tasks.values():
+            task.tick()
+
+    @property
+    def is_empty(self):
+        return len(self.tasks) == 0
 
     def remove_task(self, task_id):
         task = self.tasks[task_id]
