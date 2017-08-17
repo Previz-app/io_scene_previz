@@ -165,11 +165,15 @@ class DebugAsyncTask(Task):
         print('THREAD: Stopping')
 
     def tick(self):
-        while not queue_to_main.empty():
-            msg = queue_to_main.get()
+        print('DebugAsyncTask.tick')
+        while not self.queue_to_main.empty():
+            msg = self.queue_to_main.get()
+            print('msg', msg)
+            print('is_finished', self.is_finished)
 
             if not self.is_finished:
                 if msg == RESPOND_CANCELLED:
+                    self.finished_time = time.time()
                     self.state = 'Cancelled'
                     self.status = CANCELLED
                     self.notify()
@@ -178,7 +182,7 @@ class DebugAsyncTask(Task):
                     self.label = 'Sleep: {} {:.2}'.format(*msg)
                     self.notify()
 
-            queue_to_main.task_done()
+            self.queue_to_main.task_done()
 
 
 class Test(bpy.types.Operator):
