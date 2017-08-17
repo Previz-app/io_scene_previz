@@ -140,6 +140,7 @@ class DebugSyncTask(Task):
 
 REQUEST_CANCEL = 0
 RESPOND_CANCELLED = 1
+TASK_DONE = 2
 
 class DebugAsyncTask(Task):
     def __init__(self):
@@ -165,8 +166,7 @@ class DebugAsyncTask(Task):
     @staticmethod
     def thread_run(queue_to_worker, queue_to_main):
         print('THREAD: Starting')
-        i = 0
-        while True:
+        for i in range(1, 11):
             while not queue_to_worker.empty():
                 msg = queue_to_worker.get()
                 if msg == REQUEST_CANCEL:
@@ -174,12 +174,13 @@ class DebugAsyncTask(Task):
                     queue_to_worker.task_done()
                     return
 
-            i += 1
-            s = random.random()*5
+            s = random.random()/2
             msg = (i, s)
             queue_to_main.put(msg)
             print('THREAD: Sleep {} {:.2}'.format(*msg))
             time.sleep(s)
+
+        queue_to_main.put(TASK_DONE)
         print('THREAD: Stopping')
 
     def tick(self):
@@ -195,6 +196,9 @@ class DebugAsyncTask(Task):
                     self.state = 'Cancelled'
                     self.status = CANCELLED
                     self.notify()
+
+                if msg == TASK_DONE:
+                    self.done()
 
                 if type(msg) is tuple:
                     self.label = 'Sleep: {} {:.2}'.format(*msg)
