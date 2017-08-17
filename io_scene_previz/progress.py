@@ -24,6 +24,9 @@ class TasksRunner(object):
         id = next(ids)
         task.tasks_runner = self
         self.tasks[id] = task
+
+        task.run()
+
         return id
 
     def remove_task(self, task_id):
@@ -37,8 +40,6 @@ class TasksRunner(object):
         for cb in self.on_task_changed:
             cb(self, task)
 
-    def run(self):
-        pass
 
 tasks_runner = None
 
@@ -105,7 +106,6 @@ class Test(bpy.types.Operator):
         self.report({'INFO'}, 'Previz: progress.Test')
         task = DebugSyncTask()
         tasks_runner.add_task(task)
-        task.run()
         return {'FINISHED'}
 
 
