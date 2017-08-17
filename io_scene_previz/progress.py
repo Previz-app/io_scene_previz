@@ -8,6 +8,8 @@ import time
 import threading
 import traceback
 
+import pyperclip
+
 import addon_utils
 import bpy
 from bpy.app.handlers import persistent
@@ -307,7 +309,7 @@ Value: {}
 See the console for debug information.
 
 The debug information has been copied to the clipboard.
-Please past it to Previz support.
+Please paste it to Previz support.
 '''.format(task.label, exception.__class__.__name__, exception)
 
 
@@ -323,7 +325,9 @@ class ShowTaskError(bpy.types.Operator):
     def execute(self, context):
         task = tasks_runner.tasks[self.task_id]
         self.report({'ERROR'}, task2report(task))
-        print(task2debuginfo(task))
+        debug_info = task2debuginfo(task)
+        pyperclip.copy(debug_info)
+        print(debug_info)
         return {'FINISHED'}
 
 

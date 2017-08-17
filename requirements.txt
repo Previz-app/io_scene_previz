@@ -1,4 +1,7 @@
 bumpversion
 coverage
 previz
+pyperclip
 tox
+wheel
+
