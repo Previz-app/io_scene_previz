@@ -191,7 +191,6 @@ def register():
     tasks_runner = TasksRunner()
 
     def refresh_panel(*args, **kwarsg):
-        print('refresh_panel')
         bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
     tasks_runner.on_task_changed.append(refresh_panel)
 
