@@ -276,7 +276,7 @@ class ShowTaskError(bpy.types.Operator):
         return context.window_manager.invoke_props_dialog(self)
 
     def draw(self, context):
-        self.layout.operator_context = 'INVOKE_DEFAULT'
+        #self.layout.operator_context = 'INVOKE_DEFAULT'
         self.layout.label('This is my error dialog')
 
 
