@@ -257,7 +257,7 @@ class CancelTask(bpy.types.Operator):
 
 class ShowTaskError(bpy.types.Operator):
     bl_idname = 'export_scene.previz_show_task_error'
-    bl_label = 'Cancel Previz task'
+    bl_label = 'Show Previz task error'
 
     task_id = IntProperty(
         name = 'Task ID',
@@ -271,6 +271,13 @@ class ShowTaskError(bpy.types.Operator):
         print(''.join(traceback.format_tb(tb)))
         print('LOG END ------')
         return {'FINISHED'}
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self)
+
+    def draw(self, context):
+        self.layout.operator_context = 'INVOKE_DEFAULT'
+        self.layout.label('This is my error dialog')
 
 
 class RemoveTask(bpy.types.Operator):
