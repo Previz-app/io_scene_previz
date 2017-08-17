@@ -19,7 +19,9 @@ ids = id_generator()
 
 
 class TasksRunner(object):
-    def __init__(self):
+    def __init__(self, keep_finished_task_timeout = 2):
+        self.keep_finished_task_timeout = keep_finished_task_timeout
+
         self.tasks = {}
         self.on_task_changed = []
 
@@ -37,9 +39,19 @@ class TasksRunner(object):
 
     def tick(self):
         self.foreach_task(lambda task: task.tick())
+        self.remove_finished_tasks()
 
     def cancel(self):
         self.foreach_task(lambda task: task.cancel())
+
+    def remove_finished_tasks(self):
+        def is_timed_out(task):
+            return task.status in (DONE, CANCELLED) \
+                   and (time.time() - task.finished_time) > self.keep_finished_task_timeout
+        ids = [id for id, task in self.tasks.items() if is_timed_out(task)]
+        for id in ids:
+            self.remove_task(id)
+            self.notify_change(None)
 
     def foreach_task(self, func):
         for task in self.tasks.values():
@@ -300,15 +312,11 @@ class Panel(bpy.types.Panel):
     bl_region_type = "WINDOW"
     bl_context = "scene"
 
-    cancelled_task_display_timeout = 2 # XXX Needs to be an hidden user property
-
     def draw(self, context):
         self.layout.operator(
             'export_scene.previz_test',
             text='Progress test'
         )
-
-        self.remove_finished_tasks()
 
         for id, task in tasks_runner.tasks.items():
             row = self.layout.row()
@@ -325,14 +333,6 @@ class Panel(bpy.types.Panel):
                     'export_scene.previz_remove_task',
                     text='',
                     icon='X').task_id = id
-
-    def remove_finished_tasks(self):
-        def is_timed_out(task):
-            return task.status in (DONE, CANCELLED) \
-                   and (time.time() - task.finished_time) > self.cancelled_task_display_timeout
-        ids = [id for id, task in tasks_runner.tasks.items() if is_timed_out(task)]
-        for id in ids:
-            tasks_runner.remove_task(id)
 
 
 def register():
