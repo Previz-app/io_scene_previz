@@ -391,6 +391,8 @@ class Panel(bpy.types.Panel):
                     text='',
                     icon='X').task_id = id
 
+            row.enabled = task.status != CANCELLING
+
 
 def register():
     bpy.utils.register_class(Test)
