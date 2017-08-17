@@ -72,6 +72,13 @@ class Task(object):
         self.finished_time = time.time()
         self.state = 'Cancelled'
         self.status = CANCELLED
+        self.notify()
+
+    def done(self):
+        self.finished_time = time.time()
+        self.state = 'Done'
+        self.status = DONE
+        self.notify()
 
     @property
     def is_finished(self):
