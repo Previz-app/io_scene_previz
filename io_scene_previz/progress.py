@@ -36,8 +36,14 @@ class TasksRunner(object):
         return id
 
     def tick(self):
+        self.foreach_task(lambda task: task.tick())
+
+    def cancel(self):
+        self.foreach_task(lambda task: task.cancel())
+
+    def foreach_task(self, func):
         for task in self.tasks.values():
-            task.tick()
+            func(task)
 
     @property
     def is_empty(self):
@@ -249,6 +255,9 @@ class ManageQueue(bpy.types.Operator):
         print('ManageQueue.execute RUNNING_MODAL')
         return {'RUNNING_MODAL'}
 
+    def cancel(self, context):
+        self.cleanup(context)
+
     def modal(self, context, event):
         if event.type == 'ESC':
             print('ManageQueue.modal CANCELLED')
@@ -269,6 +278,7 @@ class ManageQueue(bpy.types.Operator):
         return {'RUNNING_MODAL'}
 
     def cleanup(self, context):
+        tasks_runner.cancel()
         self.unregister_timer(context)
 
     def register_timer(self, context):
