@@ -1,3 +1,6 @@
+import datetime
+import getpass
+import platform
 import queue
 import random
 import sys
@@ -201,7 +204,7 @@ class DebugAsyncTask(Task):
             print('THREAD: Stopping')
 
     def tick(self):
-        print('DebugAsyncTask.tick')
+        #print('DebugAsyncTask.tick')
         while not self.queue_to_main.empty():
             msg, data = self.queue_to_main.get()
             print('msg', msg)
@@ -255,6 +258,59 @@ class CancelTask(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class RaiseException(bpy.types.Operator):
+    bl_idname = 'export_scene.previz_raise_exception'
+    bl_label = 'Raise Previz exception'
+
+
+    def execute(self, context):
+        sadcsadc
+        return {'FINISHED'}
+
+
+def task2debuginfo(task):
+    type, exception, tb = task.error
+    d = datetime.datetime.now()
+    d_utc = datetime.datetime.utcfromtimestamp(d.timestamp())
+    ret = [
+        '---- PREVIZ DEBUG INFO START',
+        'Date:    : {}'.format(d.isoformat()),
+        'Date UTC : {}'.format(d_utc.isoformat()),
+        'User     : {}'.format(getpass.getuser()),
+        'Blender  : {}'.format(bpy.app.version_string),
+        'OS       : {}'.format(platform.platform()),
+        'Python   : {}'.format(sys.version),
+        'Addon    : {}'.format(''),
+        'Version  : {}'.format(''),
+        'Task     : {}'.format(task.label),
+        'Status   : {}'.format(task.status),
+        'Progress : {}'.format(task.progress),
+        'Exception: {}'.format(exception.__class__.__name__),
+        'Error    : {}'.format(str(exception)),
+        'Traceback:',
+        ''
+    ]
+    ret = '\n'.join(ret) + '\n'
+    ret += ''.join(traceback.format_tb(tb))
+    ret += '\n---- PREVIZ DEBUG INFO END\n'
+    return ret
+
+
+def task2report(task):
+    type, exception, tb = task.error
+
+    return '''Previz task error
+Task: {}
+Exception: {}
+Value: {}
+
+See the console for debug information.
+
+The debug information has been copied to the clipboard.
+Please past it to Previz support.
+'''.format(task.label, exception.__class__.__name__, exception)
+
+
 class ShowTaskError(bpy.types.Operator):
     bl_idname = 'export_scene.previz_show_task_error'
     bl_label = 'Show Previz task error'
@@ -265,19 +321,10 @@ class ShowTaskError(bpy.types.Operator):
     )
 
     def execute(self, context):
-        self.report({'INFO'}, 'Previz: Show task error {}'.format(self.task_id))
-        tb = tasks_runner.tasks[self.task_id].error[2]
-        print('LOG START ----')
-        print(''.join(traceback.format_tb(tb)))
-        print('LOG END ------')
+        task = tasks_runner.tasks[self.task_id]
+        self.report({'ERROR'}, task2report(task))
+        print(task2debuginfo(task))
         return {'FINISHED'}
-
-    def invoke(self, context, event):
-        return context.window_manager.invoke_props_dialog(self)
-
-    def draw(self, context):
-        #self.layout.operator_context = 'INVOKE_DEFAULT'
-        self.layout.label('This is my error dialog')
 
 
 class RemoveTask(bpy.types.Operator):
@@ -369,6 +416,10 @@ class Panel(bpy.types.Panel):
             text='Progress test'
         )
 
+        self.layout.operator(
+            'export_scene.previz_raise_exception'
+        )
+
         for id, task in tasks_runner.tasks.items():
             row = self.layout.row()
             row.label('{} ({})'.format(task.label, task.state))
@@ -401,6 +452,7 @@ def register():
     bpy.utils.register_class(Panel)
     bpy.utils.register_class(ManageQueue)
     bpy.utils.register_class(ShowTaskError)
+    bpy.utils.register_class(RaiseException)
 
     global tasks_runner
     tasks_runner = TasksRunner()
@@ -417,3 +469,4 @@ def unregister():
     bpy.utils.unregister_class(Panel)
     bpy.utils.unregister_class(ManageQueue)
     bpy.utils.unregister_class(ShowTaskError)
+    bpy.utils.unregister_class(RaiseException)
