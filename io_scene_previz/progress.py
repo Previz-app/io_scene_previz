@@ -130,7 +130,7 @@ class Task(object):
 
     @property
     def is_cancelable(self):
-        return hasattr(self, cancel)
+        return hasattr(self, 'cancel')
 
     @property
     def is_finished(self):
