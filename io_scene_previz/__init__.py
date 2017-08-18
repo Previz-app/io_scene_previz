@@ -271,6 +271,10 @@ class ExportPreviz(utils.BackgroundTasksOperator):
         return super(ExportPreviz, self).execute(context)
 
 
+class PrevizCancelUploadException(Exception):
+    pass
+
+
 class PublishSceneTask(progress.Task):
     def __init__(self, debug_cleanup = True, **kwargs):
         progress.Task.__init__(self)
@@ -309,9 +313,20 @@ class PublishSceneTask(progress.Task):
         if self.debug_cleanup and self.export_path.exists():
             self.export_path.unlink()
 
+    def cancel(self):
+        self.canceling()
+        self.queue_to_worker.put((progress.REQUEST_CANCEL, None))
+
     @staticmethod
     def thread_run(queue_to_worker, queue_to_main, api_root, api_token, project_id, scene_id, export_path):
         def on_progress(fp, read_size, read_so_far, size):
+            while not queue_to_worker.empty():
+                msg, data = queue_to_worker.get()
+                queue_to_worker.task_done()
+
+                if msg == progress.REQUEST_CANCEL:
+                    raise PrevizCancelUploadException
+
             data = ('progress', read_so_far / size)
             msg = (progress.TASK_UPDATE, data)
             queue_to_main.put(msg)
@@ -325,6 +340,10 @@ class PublishSceneTask(progress.Task):
 
             msg = (progress.TASK_DONE, None)
             queue_to_main.put(msg)
+
+        except PrevizCancelUploadException:
+            queue_to_main.put((progress.RESPOND_CANCELED, None))
+
         except Exception:
             msg = (progress.TASK_ERROR, sys.exc_info())
             queue_to_main.put(msg)
@@ -334,6 +353,12 @@ class PublishSceneTask(progress.Task):
             msg, data = self.queue_to_main.get()
 
             if not self.is_finished:
+                if msg == progress.RESPOND_CANCELED:
+                    self.finished_time = time.time()
+                    self.state = 'Canceled'
+                    self.status = progress.CANCELED
+                    self.notify()
+
                 if msg == progress.TASK_DONE:
                     self.progress = 1
                     self.done()
