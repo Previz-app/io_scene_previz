@@ -5,6 +5,7 @@ import site
 import shutil
 import sys
 import tempfile
+import time
 import threading
 
 import addon_utils
@@ -279,6 +280,8 @@ class PublishSceneTask(progress.Task):
         self.export_path = kwargs['export_path']
         self.debug_cleanup = debug_cleanup
 
+        self.last_progress_notify_date = None
+
         self.queue_to_worker = queue.Queue()
         self.queue_to_main = queue.Queue()
 
@@ -294,8 +297,8 @@ class PublishSceneTask(progress.Task):
         self.label = 'Exporting scene'
         self.notify()
 
-        with self.export_path.open('w') as fp:
-            previz.export(three_js_exporter.build_scene(context), fp)
+        #with self.export_path.open('w') as fp:
+            #previz.export(three_js_exporter.build_scene(context), fp)
 
         self.label = 'Publishing scene'
         self.notify()
@@ -308,8 +311,10 @@ class PublishSceneTask(progress.Task):
 
     @staticmethod
     def thread_run(queue_to_worker, queue_to_main, api_root, api_token, project_id, scene_id, export_path):
-        def on_progress(*args, **kwargs):
-            print('on_progress', args, kwargs)
+        def on_progress(fp, read_size, read_so_far, size):
+            data = ('progress', read_so_far / size)
+            msg = (progress.TASK_UPDATE, data)
+            queue_to_main.put(msg)
 
         try:
             p = previz.PrevizProject(api_root, api_token, project_id)
@@ -330,16 +335,17 @@ class PublishSceneTask(progress.Task):
 
             if not self.is_finished:
                 if msg == progress.TASK_DONE:
+                    self.progress = 1
                     self.done()
 
                 if msg == progress.TASK_UPDATE:
-                    self.notify()
-
                     request, data = data
 
                     if request == 'progress':
-                        self.progress = data
-                        self.notify()
+                        if self.notify_progress:
+                            self.last_progress_notify_date = time.time()
+                            self.progress = data
+                            self.notify()
 
                 if msg == progress.TASK_ERROR:
                     exc_info = data
@@ -349,6 +355,11 @@ class PublishSceneTask(progress.Task):
 
         if self.is_finished:
             self.cleanup(context)
+
+    @property
+    def notify_progress(self):
+        return self.last_progress_notify_date is None \
+               or (time.time() - self.last_progress_notify_date) > .25
 
 
 class ExportPreviz(bpy.types.Operator):
@@ -397,14 +408,16 @@ class ExportPreviz(bpy.types.Operator):
             suffix = '.json',
             prefix = self.__class__.__name__,
             dir = bpy.context.user_preferences.filepaths.temporary_directory)
-
+        path = '/tmp/ExportPrevize2x31rlb.json'
         export_path = pathlib.Path(path)
+        print(export_path)
         task = PublishSceneTask(
             api_root = self.api_root,
             api_token = self.api_token,
             project_id = self.project_id,
             scene_id = self.scene_id,
-            export_path = export_path
+            export_path = export_path,
+            debug_cleanup = False
         )
         progress.tasks_runner.add_task(context, task)
 
