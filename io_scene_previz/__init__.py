@@ -270,6 +270,147 @@ class ExportPreviz(utils.BackgroundTasksOperator):
         return super(ExportPreviz, self).execute(context)
 
 
+class PublishSceneTask(progress.Task):
+    def __init__(self, debug_cleanup = True, **kwargs):
+        progress.Task.__init__(self)
+
+        self.label = 'Publish scene'
+
+        self.export_path = kwargs['export_path']
+        self.debug_cleanup = debug_cleanup
+
+        self.queue_to_worker = queue.Queue()
+        self.queue_to_main = queue.Queue()
+
+        self.thread = threading.Thread(target=PublishSceneTask.thread_run,
+                                       args=(self.queue_to_worker,
+                                             self.queue_to_main),
+                                       kwargs=kwargs)
+
+    def run(self, context):
+        super().run(context)
+
+        self.progress = 0
+        self.label = 'Exporting scene'
+        self.notify()
+
+        with self.export_path.open('w') as fp:
+            previz.export(three_js_exporter.build_scene(context), fp)
+
+        self.label = 'Publishing scene'
+        self.notify()
+
+        self.thread.start()
+
+    def cleanup(self, context):
+        if self.debug_cleanup and self.export_path.exists():
+            self.export_path.unlink()
+
+    @staticmethod
+    def thread_run(queue_to_worker, queue_to_main, api_root, api_token, project_id, scene_id, export_path):
+        def on_progress(*args, **kwargs):
+            print('on_progress', args, kwargs)
+
+        try:
+            p = previz.PrevizProject(api_root, api_token, project_id)
+
+            url = p.scene(scene_id, include=[])['jsonUrl']
+            with export_path.open('rb') as fd:
+                p.update_scene(url, fd, on_progress)
+
+            msg = (progress.TASK_DONE, None)
+            queue_to_main.put(msg)
+        except Exception:
+            msg = (progress.TASK_ERROR, sys.exc_info())
+            queue_to_main.put(msg)
+
+    def tick(self, context):
+        while not self.queue_to_main.empty():
+            msg, data = self.queue_to_main.get()
+
+            if not self.is_finished:
+                if msg == progress.TASK_DONE:
+                    self.done()
+
+                if msg == progress.TASK_UPDATE:
+                    self.notify()
+
+                    request, data = data
+
+                    if request == 'progress':
+                        self.progress = data
+                        self.notify()
+
+                if msg == progress.TASK_ERROR:
+                    exc_info = data
+                    self.set_error(exc_info)
+
+            self.queue_to_main.task_done()
+
+        if self.is_finished:
+            self.cleanup(context)
+
+
+class ExportPreviz(bpy.types.Operator):
+    bl_idname = 'export_scene.previz'
+    bl_label = 'Export scene to Previz'
+
+    api_root = StringProperty(
+        name='API root'
+    )
+
+    api_token = StringProperty(
+        name='API token'
+    )
+
+    project_id = StringProperty(
+        name='Previz project ID'
+    )
+
+    scene_id = StringProperty(
+        name='Previz scene ID',
+    )
+
+    debug_cleanup = BoolProperty(
+        name='Cleanup temporary folder',
+        default=True,
+        options={'HIDDEN'}
+    )
+
+    def __init__(self):
+        utils.BackgroundTasksOperator.__init__(self)
+
+        self.g = {}
+
+    @classmethod
+    def poll(cls, context):
+        return True # Context check in the future
+
+    @log_execute
+    def execute(self, context):
+        team_uuid = active.team(context)['id']
+        #p = previz.PrevizProject(self.api_root, self.api_token)
+        #project = p.new_project(self.project_name, team_uuid)
+        #refresh_active(context)
+        #active.set_project(context, project)
+        fileno, path = tempfile.mkstemp(
+            suffix = '.json',
+            prefix = self.__class__.__name__,
+            dir = bpy.context.user_preferences.filepaths.temporary_directory)
+
+        export_path = pathlib.Path(path)
+        task = PublishSceneTask(
+            api_root = self.api_root,
+            api_token = self.api_token,
+            project_id = self.project_id,
+            scene_id = self.scene_id,
+            export_path = export_path
+        )
+        progress.tasks_runner.add_task(context, task)
+
+        return {'FINISHED'}
+
+
 class ExportPrevizFromUI(bpy.types.Operator):
     bl_idname = 'export_scene.previz_from_ui'
     bl_label = 'Export scene to Previz'
