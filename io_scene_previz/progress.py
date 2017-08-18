@@ -99,7 +99,6 @@ class Task(object):
         self.error = None
         self.progress = None
         self.finished_time = None
-        self.is_cancelable = True
         self.tasks_runner = None
 
     def run(self):
@@ -130,6 +129,10 @@ class Task(object):
         self.state = 'Error'
         self.status = ERROR
         self.notify()
+
+    @property
+    def is_cancelable(self):
+        return hasattr(self, cancel)
 
     @property
     def is_finished(self):
