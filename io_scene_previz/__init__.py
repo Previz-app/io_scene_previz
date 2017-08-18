@@ -783,7 +783,7 @@ class RefreshAllTask(progress.Task):
             msg = (progress.TASK_ERROR, sys.exc_info())
             queue_to_main.put(msg)
 
-    def tick(self):
+    def tick(self, context):
         while not self.queue_to_main.empty():
             msg, data = self.queue_to_main.get()
 

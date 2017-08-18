@@ -44,9 +44,9 @@ class TasksRunner(object):
 
         return id
 
-    def tick(self):
+    def tick(self, context):
         for task in self.tasks.values():
-            task.tick()
+            task.tick(context)
         self.remove_finished_tasks()
 
     def cancel(self):
@@ -136,7 +136,7 @@ class Task(object):
     def is_finished(self):
         return self.status in (DONE, CANCELED, ERROR)
 
-    def tick(self):
+    def tick(self, context):
         pass
 
     def notify(self):
@@ -207,7 +207,7 @@ class DebugAsyncTask(Task):
         finally:
             print('THREAD: Stopping')
 
-    def tick(self):
+    def tick(self, context):
         #print('DebugAsyncTask.tick')
         while not self.queue_to_main.empty():
             msg, data = self.queue_to_main.get()
@@ -389,7 +389,7 @@ class ManageQueue(bpy.types.Operator):
             self.cleanup(context)
             #print('ManageQueue.handle_timer_event FINISHED')
             return {'FINISHED'}
-        tasks_runner.tick()
+        tasks_runner.tick(context)
         #print('ManageQueue.handle_timer_event RUNNING_MODAL')
         return {'RUNNING_MODAL'}
 
