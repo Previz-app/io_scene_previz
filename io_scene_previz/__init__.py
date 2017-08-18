@@ -29,7 +29,8 @@ bl_info = {
     'blender': (2, 76, 0),
     'location': "File > Export",
     'description': "Upload scenes to Previz.",
-    'category': 'Import-Export'
+    'category': 'Import-Export',
+    'warning': 'This a WIP development version'
 }
 
 version_string = '.'.join([str(x) for x in bl_info['version']])
