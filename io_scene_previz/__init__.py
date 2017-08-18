@@ -302,8 +302,8 @@ class PublishSceneTask(progress.Task):
         self.label = 'Exporting scene'
         self.notify()
 
-        #with self.export_path.open('w') as fp:
-            #previz.export(three_js_exporter.build_scene(context), fp)
+        with self.export_path.open('w') as fp:
+            previz.export(three_js_exporter.build_scene(context), fp)
 
         self.label = 'Publishing scene'
         self.notify()
@@ -434,9 +434,9 @@ class ExportPreviz(bpy.types.Operator):
             suffix = '.json',
             prefix = self.__class__.__name__,
             dir = bpy.context.user_preferences.filepaths.temporary_directory)
-        path = '/tmp/ExportPrevize2x31rlb.json'
+
         export_path = pathlib.Path(path)
-        print(export_path)
+
         task = PublishSceneTask(
             api_root = self.api_root,
             api_token = self.api_token,
