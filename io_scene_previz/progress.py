@@ -53,7 +53,7 @@ class TasksRunner(object):
 
     def remove_finished_tasks(self):
         def is_timed_out(task):
-            return task.status in (DONE, CANCELLED) \
+            return task.status in (DONE, CANCELED) \
                    and (time.time() - task.finished_time) > self.keep_finished_task_timeout
         ids = [id for id, task in self.tasks.items() if is_timed_out(task)]
         for id in ids:
@@ -86,8 +86,8 @@ IDLE = 'idle'
 STARTING = 'starting'
 RUNNING = 'running'
 DONE = 'done'
-CANCELLING = 'cancelling'
-CANCELLED = 'cancelled'
+CANCELING = 'canceling'
+CANCELED = 'canceled'
 ERROR = 'error'
 
 
@@ -99,7 +99,7 @@ class Task(object):
         self.error = None
         self.progress = None
         self.finished_time = None
-        self.is_cancellable = True
+        self.is_cancelable = True
         self.tasks_runner = None
 
     def run(self):
@@ -107,10 +107,15 @@ class Task(object):
         self.status = RUNNING
         self.notify()
 
-    def cancel(self):
+    def canceling(self):
+        self.state = 'Canceling'
+        self.status = CANCELING
+        self.notify()
+
+    def canceled(self):
         self.finished_time = time.time()
-        self.state = 'Cancelled'
-        self.status = CANCELLED
+        self.state = 'Canceled'
+        self.status = CANCELED
         self.notify()
 
     def done(self):
@@ -128,7 +133,7 @@ class Task(object):
 
     @property
     def is_finished(self):
-        return self.status in (DONE, CANCELLED, ERROR)
+        return self.status in (DONE, CANCELED, ERROR)
 
     def tick(self):
         pass
@@ -153,7 +158,7 @@ class DebugSyncTask(Task):
 
 
 REQUEST_CANCEL = 0
-RESPOND_CANCELLED = 1
+RESPOND_CANCELED = 1
 TASK_DONE = 2
 TASK_UPDATE = 3
 TASK_ERROR = 4
@@ -174,22 +179,18 @@ class DebugAsyncTask(Task):
         print('MAIN: Started thread')
 
     def cancel(self):
-        self.state = 'Cancelling'
-        self.status = CANCELLING
-        self.notify()
-        self.queue_to_worker.put((REQUEST_CANCEL,None))
+        self.canceling()
+        self.queue_to_worker.put((REQUEST_CANCEL, None))
 
     @staticmethod
     def thread_run(queue_to_worker, queue_to_main):
         print('THREAD: Starting')
         try:
             for i in range(1, 11):
-                if i == 3:
-                    raise RuntimeError('Damn yeah, here I raise')
                 while not queue_to_worker.empty():
                     msg, data = queue_to_worker.get()
                     if msg == REQUEST_CANCEL:
-                        queue_to_main.put((RESPOND_CANCELLED, None))
+                        queue_to_main.put((RESPOND_CANCELED, None))
                         queue_to_worker.task_done()
                         return
 
@@ -213,10 +214,10 @@ class DebugAsyncTask(Task):
             print('is_finished', self.is_finished)
 
             if not self.is_finished:
-                if msg == RESPOND_CANCELLED:
+                if msg == RESPOND_CANCELED:
                     self.finished_time = time.time()
-                    self.state = 'Cancelled'
-                    self.status = CANCELLED
+                    self.state = 'Canceled'
+                    self.status = CANCELED
                     self.notify()
 
                 if msg == TASK_DONE:
@@ -374,8 +375,8 @@ class ManageQueue(bpy.types.Operator):
 
     def modal(self, context, event):
         if event.type == 'ESC':
-            #print('ManageQueue.modal CANCELLED')
-            return {'CANCELLED'}
+            #print('ManageQueue.modal CANCELED')
+            return {'CANCELED'}
 
         if event.type == 'TIMER':
             return self.handle_timer_event(context, event)
@@ -434,7 +435,7 @@ class Panel(bpy.types.Panel):
                     text='',
                     icon='ERROR').task_id = id
 
-            if task.is_cancellable and not task.is_finished:
+            if task.is_cancelable and not task.is_finished:
                 row.operator(
                     'export_scene.previz_cancel_task',
                     text='',
@@ -446,7 +447,7 @@ class Panel(bpy.types.Panel):
                     text='',
                     icon='X').task_id = id
 
-            row.enabled = task.status != CANCELLING
+            row.enabled = task.status != CANCELING
 
 
 def register():
