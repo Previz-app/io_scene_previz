@@ -62,10 +62,6 @@ class TasksRunner(object):
             self.remove_task(id)
             self.notify_change(None)
 
-    def foreach_task(self, func):
-        for task in self.tasks.values():
-            func(task)
-
     @property
     def is_empty(self):
         return len(self.tasks) == 0
