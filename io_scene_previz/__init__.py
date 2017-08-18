@@ -442,6 +442,79 @@ class CreateProject(bpy.types.Operator):
         return context.window_manager.invoke_props_dialog(self)
 
 
+class CreateSceneTask(progress.Task):
+    def __init__(self, **kwargs):
+        progress.Task.__init__(self)
+
+        self.label = 'New scene'
+
+        self.api_root = kwargs['api_root']
+        self.api_token = kwargs['api_token']
+
+        self.scene = None
+
+        self.queue_to_worker = queue.Queue()
+        self.queue_to_main = queue.Queue()
+
+        self.thread = threading.Thread(target=CreateSceneTask.thread_run,
+                                       args=(self.queue_to_worker,
+                                             self.queue_to_main),
+                                       kwargs=kwargs)
+
+    def run(self):
+        super().run()
+
+        self.progress = 0
+        self.notify()
+
+        self.thread.start()
+
+    @staticmethod
+    def thread_run(queue_to_worker, queue_to_main, api_root, api_token, scene_name, project_id):
+        try:
+            p = previz.PrevizProject(api_root, api_token, project_id)
+
+            data = ('new_scene', p.new_scene(scene_name))
+            msg = (progress.TASK_UPDATE, data)
+            queue_to_main.put(msg)
+
+            data = ('get_all', p.get_all())
+            msg = (progress.TASK_UPDATE, data)
+            queue_to_main.put(msg)
+
+            msg = (progress.TASK_DONE, None)
+            queue_to_main.put(msg)
+        except Exception:
+            msg = (progress.TASK_ERROR, sys.exc_info())
+            queue_to_main.put(msg)
+
+    def tick(self, context):
+        while not self.queue_to_main.empty():
+            msg, data = self.queue_to_main.get()
+
+            if not self.is_finished:
+                if msg == progress.TASK_DONE:
+                    self.done()
+
+                if msg == progress.TASK_UPDATE:
+                    self.notify()
+
+                    request, data = data
+
+                    if request == 'new_scene':
+                        self.scene = data
+
+                    if request == 'get_all':
+                        active.teams = extract_all(data)
+                        active.set_scene(context, self.scene)
+
+                if msg == progress.TASK_ERROR:
+                    exc_info = data
+                    self.set_error(exc_info)
+
+            self.queue_to_main.task_done()
+
+
 class CreateScene(bpy.types.Operator):
     bl_idname = 'export_scene.previz_new_scene'
     bl_label = 'New Previz scene'
@@ -469,19 +542,21 @@ class CreateScene(bpy.types.Operator):
 
     @log_execute
     def execute(self, context):
-        project_id = active.project(context)['id']
-        api = previz.PrevizProject(self.api_root,
-                                   self.api_token,
-                                   project_id)
-        scene = api.new_scene(self.scene_name)
-        refresh_active(context)
-        active.set_scene(context, scene)
+        task = CreateSceneTask(
+            api_root = self.api_root,
+            api_token = self.api_token,
+            scene_name = self.scene_name,
+            project_id = active.project(context)['id']
+        )
+        progress.tasks_runner.add_task(task)
+
         return {'FINISHED'}
 
     @log_invoke
     def invoke(self, context, event):
         self.api_root, self.api_token = previz_preferences(context)
         return context.window_manager.invoke_props_dialog(self)
+
 
 class UploadImage(utils.BackgroundTasksOperator):
     bl_idname = 'export_scene.previz_upload_image'
