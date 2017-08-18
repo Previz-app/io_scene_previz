@@ -45,12 +45,12 @@ class TasksRunner(object):
         return id
 
     def tick(self):
-        for task in self.tasks:
+        for task in self.tasks.values():
             task.tick()
         self.remove_finished_tasks()
 
     def cancel(self):
-        for task in [t for t in self.tasks if t.is_cancelable]:
+        for task in [t for t in self.tasks.values() if t.is_cancelable]:
             task.cancel()
 
     def remove_finished_tasks(self):
