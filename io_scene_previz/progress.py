@@ -45,11 +45,13 @@ class TasksRunner(object):
         return id
 
     def tick(self):
-        self.foreach_task(lambda task: task.tick())
+        for task in self.tasks:
+            task.tick()
         self.remove_finished_tasks()
 
     def cancel(self):
-        self.foreach_task(lambda task: task.cancel())
+        for task in [t for t in self.tasks if t.is_cancelable]:
+            task.cancel()
 
     def remove_finished_tasks(self):
         def is_timed_out(task):
