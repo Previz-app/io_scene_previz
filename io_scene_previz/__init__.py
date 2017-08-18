@@ -322,6 +322,79 @@ class ExportPrevizFile(bpy.types.Operator, ExportHelper):
         return {'FINISHED'}
 
 
+class CreateProjectTask(progress.Task):
+    def __init__(self, **kwargs):
+        progress.Task.__init__(self)
+
+        self.label = 'New project'
+
+        self.api_root = kwargs['api_root']
+        self.api_token = kwargs['api_token']
+
+        self.project = None
+
+        self.queue_to_worker = queue.Queue()
+        self.queue_to_main = queue.Queue()
+
+        self.thread = threading.Thread(target=CreateProjectTask.thread_run,
+                                       args=(self.queue_to_worker,
+                                             self.queue_to_main),
+                                       kwargs=kwargs)
+
+    def run(self):
+        super().run()
+
+        self.progress = 0
+        self.notify()
+
+        self.thread.start()
+
+    @staticmethod
+    def thread_run(queue_to_worker, queue_to_main, api_root, api_token, project_name, team_uuid):
+        try:
+            p = previz.PrevizProject(api_root, api_token)
+
+            data = ('new_project', p.new_project(project_name, team_uuid))
+            msg = (progress.TASK_UPDATE, data)
+            queue_to_main.put(msg)
+
+            data = ('get_all', p.get_all())
+            msg = (progress.TASK_UPDATE, data)
+            queue_to_main.put(msg)
+
+            msg = (progress.TASK_DONE, None)
+            queue_to_main.put(msg)
+        except Exception:
+            msg = (progress.TASK_ERROR, sys.exc_info())
+            queue_to_main.put(msg)
+
+    def tick(self, context):
+        while not self.queue_to_main.empty():
+            msg, data = self.queue_to_main.get()
+
+            if not self.is_finished:
+                if msg == progress.TASK_DONE:
+                    self.done()
+
+                if msg == progress.TASK_UPDATE:
+                    self.notify()
+
+                    request, data = data
+
+                    if request == 'new_project':
+                        self.project = data
+
+                    if request == 'get_all':
+                        active.teams = extract_all(data)
+                        active.set_project(context, self.project)
+
+                if msg == progress.TASK_ERROR:
+                    exc_info = data
+                    self.set_error(exc_info)
+
+            self.queue_to_main.task_done()
+
+
 class CreateProject(bpy.types.Operator):
     bl_idname = 'export_scene.previz_new_project'
     bl_label = 'New Previz project'
@@ -348,10 +421,19 @@ class CreateProject(bpy.types.Operator):
     @log_execute
     def execute(self, context):
         team_uuid = active.team(context)['id']
-        p = previz.PrevizProject(self.api_root, self.api_token)
-        project = p.new_project(self.project_name, team_uuid)
-        refresh_active(context)
-        active.set_project(context, project)
+        #p = previz.PrevizProject(self.api_root, self.api_token)
+        #project = p.new_project(self.project_name, team_uuid)
+        #refresh_active(context)
+        #active.set_project(context, project)
+
+        task = CreateProjectTask(
+            api_root = self.api_root,
+            api_token = self.api_token,
+            project_name = self.project_name,
+            team_uuid = team_uuid
+        )
+        progress.tasks_runner.add_task(task)
+
         return {'FINISHED'}
 
     @log_invoke
