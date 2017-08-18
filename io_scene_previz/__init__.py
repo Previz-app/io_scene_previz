@@ -5,6 +5,7 @@ import site
 import shutil
 import sys
 import tempfile
+import threading
 
 import addon_utils
 import bpy
@@ -722,6 +723,7 @@ def refresh_active(context):
     global new_plugin_version
     new_plugin_version = p.updated_plugin('blender', version_string)
 
+
 class RefreshProjects(bpy.types.Operator):
     bl_idname = 'export_scene.previz_refresh_projects'
     bl_label = 'Refresh Previz projects'
@@ -733,8 +735,88 @@ class RefreshProjects(bpy.types.Operator):
 
     @log_execute
     def execute(self, context):
-        refresh_active(context)
+        api_root, api_token = previz_preferences(context)
+        task = RefreshAllTask(api_root, api_token, version_string)
+        progress.tasks_runner.add_task(task)
         return {'FINISHED'}
+
+
+class RefreshAllTask(progress.Task):
+    def __init__(self, api_root, api_token, version_string):
+        progress.Task.__init__(self)
+
+        self.queue_to_worker = queue.Queue()
+        self.queue_to_main = queue.Queue()
+        self.thread = threading.Thread(target=RefreshAllTask.thread_run,
+                                       args=(self.queue_to_worker,
+                                             self.queue_to_main,
+                                             api_root,
+                                             api_token,
+                                             version_string))
+
+    def run(self):
+        self.progress = 0
+        self.notify()
+
+        self.thread.start()
+
+    @staticmethod
+    def thread_run(queue_to_worker, queue_to_main, api_root, api_token, version_string):
+        try:
+            p = previz.PrevizProject(api_root, api_token)
+
+            data = ('label', 'Getting projects')
+            msg = (progress.TASK_UPDATE, data)
+            queue_to_main.put(msg)
+
+            data = ('get_all', p.get_all())
+            msg = (progress.TASK_UPDATE, data)
+            queue_to_main.put(msg)
+
+            data = ('label', 'Check updates')
+            msg = (progress.TASK_UPDATE, data)
+            queue_to_main.put(msg)
+
+            data = ('updated_plugin', p.updated_plugin('blender', version_string))
+            msg = (progress.TASK_UPDATE, data)
+            queue_to_main.put(msg)
+
+            msg = (progress.TASK_DONE, None)
+            queue_to_main.put(msg)
+        except Exception:
+            msg = (progress.TASK_ERROR, sys.exc_info())
+            queue_to_main.put(msg)
+
+    def tick(self):
+        while not self.queue_to_main.empty():
+            msg, data = self.queue_to_main.get()
+
+            if not self.is_finished:
+                if msg == progress.TASK_DONE:
+                    self.done()
+
+                if msg == progress.TASK_UPDATE:
+                    self.progress += .5
+                    self.notify()
+
+                    request, data = data
+
+                    if request == 'label':
+                        self.label = data
+                        self.notify()
+
+                    if request == 'get_all':
+                        active.teams = extract_all(data)
+
+                    if request == 'updated_plugin':
+                        global new_plugin_version
+                        new_plugin_version = data
+
+                if msg == progress.TASK_ERROR:
+                    exc_info = data
+                    self.set_error(exc_info)
+
+            self.queue_to_main.task_done()
 
 
 class PrevizPanel(bpy.types.Panel):
