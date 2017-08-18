@@ -431,7 +431,7 @@ class Panel(bpy.types.Panel):
             label = '{} ({})'.format(task.label, task.state)
             if task.progress is not None:
                 label += ' {:.0f}%'.format(task.progress*100)
-            row.label(label)
+            row.label(label, icon='RIGHTARROW_THIN')
 
             if task.status == ERROR:
                 row.operator(
