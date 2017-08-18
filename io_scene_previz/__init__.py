@@ -745,6 +745,8 @@ class RefreshAllTask(progress.Task):
     def __init__(self, api_root, api_token, version_string):
         progress.Task.__init__(self)
 
+        self.label = 'Refresh'
+
         self.queue_to_worker = queue.Queue()
         self.queue_to_main = queue.Queue()
         self.thread = threading.Thread(target=RefreshAllTask.thread_run,
@@ -755,6 +757,8 @@ class RefreshAllTask(progress.Task):
                                              version_string))
 
     def run(self):
+        super().run()
+
         self.progress = 0
         self.notify()
 
@@ -765,15 +769,7 @@ class RefreshAllTask(progress.Task):
         try:
             p = previz.PrevizProject(api_root, api_token)
 
-            data = ('label', 'Getting projects')
-            msg = (progress.TASK_UPDATE, data)
-            queue_to_main.put(msg)
-
             data = ('get_all', p.get_all())
-            msg = (progress.TASK_UPDATE, data)
-            queue_to_main.put(msg)
-
-            data = ('label', 'Check updates')
             msg = (progress.TASK_UPDATE, data)
             queue_to_main.put(msg)
 
@@ -800,10 +796,6 @@ class RefreshAllTask(progress.Task):
                     self.notify()
 
                     request, data = data
-
-                    if request == 'label':
-                        self.label = data
-                        self.notify()
 
                     if request == 'get_all':
                         active.teams = extract_all(data)
