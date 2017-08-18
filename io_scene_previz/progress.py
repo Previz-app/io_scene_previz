@@ -32,12 +32,12 @@ class TasksRunner(object):
         self.tasks = {}
         self.on_task_changed = []
 
-    def add_task(self, task):
+    def add_task(self, context, task):
         id = next(ids)
         task.tasks_runner = self
         self.tasks[id] = task
 
-        task.run()
+        task.run(context)
 
         if len(self.tasks) == 1:
             bpy.ops.export_scene.previz_manage_queue()
@@ -99,7 +99,7 @@ class Task(object):
         self.finished_time = None
         self.tasks_runner = None
 
-    def run(self):
+    def run(self, context):
         self.state = 'Running'
         self.status = RUNNING
         self.notify()
@@ -147,8 +147,8 @@ class DebugSyncTask(Task):
     def __init__(self):
         Task.__init__(self)
 
-    def run(self):
-        super().run()
+    def run(self, context):
+        super().run(context)
         for ms in range(0, 510, 100):
             s = ms / 1000
             time.sleep(s)
@@ -174,7 +174,7 @@ class DebugAsyncTask(Task):
                                        args=(self.queue_to_worker,
                                              self.queue_to_main))
 
-    def run(self):
+    def run(self, context):
         print('MAIN: Starting thread')
         self.thread.start()
         print('MAIN: Started thread')
@@ -243,7 +243,7 @@ class Test(bpy.types.Operator):
     def execute(self, context):
         self.report({'INFO'}, 'Previz: progress.Test')
         task = DebugAsyncTask()
-        tasks_runner.add_task(task)
+        tasks_runner.add_task(context, task)
         return {'FINISHED'}
 
 

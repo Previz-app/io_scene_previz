@@ -341,8 +341,8 @@ class CreateProjectTask(progress.Task):
                                              self.queue_to_main),
                                        kwargs=kwargs)
 
-    def run(self):
-        super().run()
+    def run(self, context):
+        super().run(context)
 
         self.progress = 0
         self.notify()
@@ -432,7 +432,7 @@ class CreateProject(bpy.types.Operator):
             project_name = self.project_name,
             team_uuid = team_uuid
         )
-        progress.tasks_runner.add_task(task)
+        progress.tasks_runner.add_task(context, task)
 
         return {'FINISHED'}
 
@@ -461,8 +461,8 @@ class CreateSceneTask(progress.Task):
                                              self.queue_to_main),
                                        kwargs=kwargs)
 
-    def run(self):
-        super().run()
+    def run(self, context):
+        super().run(context)
 
         self.progress = 0
         self.notify()
@@ -548,7 +548,7 @@ class CreateScene(bpy.types.Operator):
             scene_name = self.scene_name,
             project_id = active.project(context)['id']
         )
-        progress.tasks_runner.add_task(task)
+        progress.tasks_runner.add_task(context, task)
 
         return {'FINISHED'}
 
@@ -894,7 +894,7 @@ class RefreshProjects(bpy.types.Operator):
     def execute(self, context):
         api_root, api_token = previz_preferences(context)
         task = RefreshAllTask(api_root, api_token, version_string)
-        progress.tasks_runner.add_task(task)
+        progress.tasks_runner.add_task(context, task)
         return {'FINISHED'}
 
 
@@ -913,8 +913,8 @@ class RefreshAllTask(progress.Task):
                                              api_token,
                                              version_string))
 
-    def run(self):
-        super().run()
+    def run(self, context):
+        super().run(context)
 
         self.progress = 0
         self.notify()
