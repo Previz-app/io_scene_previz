@@ -417,14 +417,14 @@ class Panel(bpy.types.Panel):
     bl_context = "scene"
 
     def draw(self, context):
-        self.layout.operator(
-            'export_scene.previz_test',
-            text='Progress test'
-        )
+        #self.layout.operator(
+            #'export_scene.previz_test',
+            #text='Progress test'
+        #)
 
-        self.layout.operator(
-            'export_scene.previz_raise_exception'
-        )
+        #self.layout.operator(
+            #'export_scene.previz_raise_exception'
+        #)
 
         for id, task in tasks_runner.tasks.items():
             row = self.layout.row()
@@ -455,13 +455,13 @@ class Panel(bpy.types.Panel):
 
 
 def register():
-    bpy.utils.register_class(Test)
+    #bpy.utils.register_class(Test)
     bpy.utils.register_class(CancelTask)
     bpy.utils.register_class(RemoveTask)
     bpy.utils.register_class(Panel)
     bpy.utils.register_class(ManageQueue)
     bpy.utils.register_class(ShowTaskError)
-    bpy.utils.register_class(RaiseException)
+    #bpy.utils.register_class(RaiseException)
 
     global tasks_runner
     tasks_runner = TasksRunner()
@@ -472,10 +472,10 @@ def register():
 
 
 def unregister():
-    bpy.utils.unregister_class(Test)
+    #bpy.utils.unregister_class(Test)
     bpy.utils.unregister_class(CancelTask)
     bpy.utils.unregister_class(RemoveTask)
     bpy.utils.unregister_class(Panel)
     bpy.utils.unregister_class(ManageQueue)
     bpy.utils.unregister_class(ShowTaskError)
-    bpy.utils.unregister_class(RaiseException)
+    #bpy.utils.unregister_class(RaiseException)
