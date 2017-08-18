@@ -93,7 +93,7 @@ class Task(object):
     def __init__(self):
         self.label = 'label'
         self.status = IDLE
-        self.state = 'state'
+        self.state = 'Idle'
         self.error = None
         self.progress = None
         self.finished_time = None
