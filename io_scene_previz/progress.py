@@ -428,7 +428,10 @@ class Panel(bpy.types.Panel):
 
         for id, task in tasks_runner.tasks.items():
             row = self.layout.row()
-            row.label('{} ({})'.format(task.label, task.state))
+            label = '{} ({})'.format(task.label, task.state)
+            if task.progress is not None:
+                label += ' {:.0f}%'.format(task.progress*100)
+            row.label(label)
 
             if task.status == ERROR:
                 row.operator(
