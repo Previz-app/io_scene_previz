@@ -2,7 +2,6 @@ import os
 import pathlib
 import queue
 import site
-import shutil
 import sys
 import tempfile
 import time
@@ -19,10 +18,8 @@ def sitedir():
     return str(path.resolve())
 site.addsitedir(sitedir())
 
-import addon_utils
 import bpy
-from bpy.app.handlers import persistent
-from bpy.props import BoolProperty, EnumProperty, IntProperty, StringProperty
+from bpy.props import BoolProperty, EnumProperty, StringProperty
 from bpy_extras.io_utils import ExportHelper, path_reference_mode
 
 import previz
