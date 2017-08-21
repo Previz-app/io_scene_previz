@@ -22,7 +22,6 @@ def id_generator():
     while True:
         id += 1
         yield id
-ids = id_generator()
 
 
 class TasksRunner(object):
@@ -32,8 +31,10 @@ class TasksRunner(object):
         self.tasks = {}
         self.on_task_changed = []
 
+        self.id_generator = id_generator()
+
     def add_task(self, context, task):
-        id = next(ids)
+        id = self.new_task_id()
         task.tasks_runner = self
         self.tasks[id] = task
 
@@ -76,6 +77,9 @@ class TasksRunner(object):
     def notify_change(self, task):
         for cb in self.on_task_changed:
             cb(self, task)
+
+    def new_task_id(self):
+        return next(self.id_generator)
 
 
 tasks_runner = None
