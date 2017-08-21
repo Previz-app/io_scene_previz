@@ -446,10 +446,11 @@ class Panel(bpy.types.Panel):
                     icon='CANCEL').task_id = id
 
             if task.is_finished:
+                icon = 'FILE_TICK' if task.status == DONE else 'X'
                 row.operator(
                     'export_scene.previz_remove_task',
                     text='',
-                    icon='X').task_id = id
+                    icon=icon).task_id = id
 
             row.enabled = task.status != CANCELING
 
