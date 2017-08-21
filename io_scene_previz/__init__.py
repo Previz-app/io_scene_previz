@@ -237,7 +237,13 @@ class ExportPreviz(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        return True # Context check in the future
+        api_root, api_token = previz_preferences(context)
+        api_root_is_valid = len(api_root) > 0
+        api_token_is_valid = len(api_token) > 0
+        active_scene_is_valid = active.is_valid(context)
+        return api_root_is_valid \
+               and api_token_is_valid \
+               and active_scene_is_valid
 
     def execute(self, context):
         team_uuid = active.team(context)['id']
@@ -260,24 +266,6 @@ class ExportPreviz(bpy.types.Operator):
         tasks_runner.add_task(context, task)
 
         return {'FINISHED'}
-
-
-# TODO Should be an invoke
-class ExportPrevizFromUI(bpy.types.Operator):
-    bl_idname = 'export_scene.previz_from_ui'
-    bl_label = 'Export scene to Previz'
-
-    @classmethod
-    def poll(cls, context):
-        api_root, api_token = previz_preferences(context)
-        api_root_is_valid = len(api_root) > 0
-        api_token_is_valid = len(api_token) > 0
-        active_scene_is_valid = active.is_valid(context)
-        operator_is_valid = ExportPreviz.poll(context)
-        return api_root_is_valid \
-               and api_token_is_valid \
-               and active_scene_is_valid \
-               and operator_is_valid
 
     def invoke(self, context, event):
         api_root, api_token = previz_preferences(context)
@@ -520,7 +508,7 @@ class PrevizPanel(bpy.types.Panel):
             row.operator('export_scene.previz_new_scene', text='', icon='NEW')
 
             self.layout.operator(
-                'export_scene.previz_from_ui',
+                'export_scene.previz',
                 text='Update Previz scene',
                 icon='EXPORT'
             )
