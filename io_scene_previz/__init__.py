@@ -129,6 +129,38 @@ class CancelTask(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class RemoveTask(bpy.types.Operator):
+    bl_idname = 'export_scene.previz_remove_task'
+    bl_label = 'Remove Previz task'
+
+    task_id = IntProperty(
+        name = 'Task ID',
+        default = -1
+    )
+
+    def execute(self, context):
+        tasks_runner.remove_task(self.task_id)
+        return {'FINISHED'}
+
+
+class ShowTaskError(bpy.types.Operator):
+    bl_idname = 'export_scene.previz_show_task_error'
+    bl_label = 'Show Previz task error'
+
+    task_id = IntProperty(
+        name = 'Task ID',
+        default = -1
+    )
+
+    def execute(self, context):
+        task = tasks_runner.tasks[self.task_id]
+        self.report({'ERROR'}, task2report(task))
+        debug_info = task2debuginfo(task)
+        pyperclip.copy(debug_info)
+        print(debug_info)
+        return {'FINISHED'}
+
+
 def task2debuginfo(task):
     type, exception, tb = task.error
     d = datetime.datetime.now()
@@ -172,41 +204,10 @@ Please paste it to Previz support.
 '''.format(task.label, exception.__class__.__name__, exception)
 
 
-class ShowTaskError(bpy.types.Operator):
-    bl_idname = 'export_scene.previz_show_task_error'
-    bl_label = 'Show Previz task error'
-
-    task_id = IntProperty(
-        name = 'Task ID',
-        default = -1
-    )
-
-    def execute(self, context):
-        task = tasks_runner.tasks[self.task_id]
-        self.report({'ERROR'}, task2report(task))
-        debug_info = task2debuginfo(task)
-        pyperclip.copy(debug_info)
-        print(debug_info)
-        return {'FINISHED'}
-
-
-class RemoveTask(bpy.types.Operator):
-    bl_idname = 'export_scene.previz_remove_task'
-    bl_label = 'Remove Previz task'
-
-    task_id = IntProperty(
-        name = 'Task ID',
-        default = -1
-    )
-
-    def execute(self, context):
-        tasks_runner.remove_task(self.task_id)
-        return {'FINISHED'}
-
-
 #############################################################################
 # PREVIZ OPERATORS
 #############################################################################
+
 
 class ExportPreviz(bpy.types.Operator):
     bl_idname = 'export_scene.previz'
@@ -312,6 +313,35 @@ class ExportPrevizFile(bpy.types.Operator, ExportHelper):
         return {'FINISHED'}
 
 
+class RefreshProjects(bpy.types.Operator):
+    bl_idname = 'export_scene.previz_refresh_projects'
+    bl_label = 'Refresh Previz projects'
+
+    @classmethod
+    def poll(cls, context):
+        api_root, api_token = previz_preferences(context)
+        return len(api_root) > 0 and len(api_token) > 0
+
+    def execute(self, context):
+        def on_get_all(context, data):
+            active.teams = utils.extract_all(data)
+
+        def on_updated_plugins(context, data):
+            global new_plugin_version
+            new_plugin_version = data
+
+        api_root, api_token = previz_preferences(context)
+        task = tasks.RefreshAllTask(
+            api_root,
+            api_token,
+            version_string,
+            on_get_all,
+            on_updated_plugins
+        )
+        tasks_runner.add_task(context, task)
+        return {'FINISHED'}
+
+
 class CreateProject(bpy.types.Operator):
     bl_idname = 'export_scene.previz_new_project'
     bl_label = 'New Previz project'
@@ -404,6 +434,11 @@ class CreateScene(bpy.types.Operator):
         return context.window_manager.invoke_props_dialog(self)
 
 
+#############################################################################
+# PREFERENCES
+#############################################################################
+
+
 class PrevizPreferences(bpy.types.AddonPreferences):
     bl_idname = __name__
 
@@ -434,38 +469,9 @@ def previz_preferences(context):
     return prefs.api_root, prefs.api_token
 
 
-#########
-# Panels #
-#########
-
-
-class RefreshProjects(bpy.types.Operator):
-    bl_idname = 'export_scene.previz_refresh_projects'
-    bl_label = 'Refresh Previz projects'
-
-    @classmethod
-    def poll(cls, context):
-        api_root, api_token = previz_preferences(context)
-        return len(api_root) > 0 and len(api_token) > 0
-
-    def execute(self, context):
-        def on_get_all(context, data):
-            active.teams = utils.extract_all(data)
-
-        def on_updated_plugins(context, data):
-            global new_plugin_version
-            new_plugin_version = data
-
-        api_root, api_token = previz_preferences(context)
-        task = tasks.RefreshAllTask(
-            api_root,
-            api_token,
-            version_string,
-            on_get_all,
-            on_updated_plugins
-        )
-        tasks_runner.add_task(context, task)
-        return {'FINISHED'}
+#############################################################################
+# QUEUE OPERATORS
+#############################################################################
 
 
 class PrevizPanel(bpy.types.Panel):
@@ -569,7 +575,7 @@ class Panel(bpy.types.Panel):
 
 
 #############################################################################
-# Registration
+# REGISTRATION
 #############################################################################
 
 
