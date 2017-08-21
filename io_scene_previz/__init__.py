@@ -316,8 +316,8 @@ class ExportScene(bpy.types.Operator, ExportHelper):
 
 
 class RefreshProjects(bpy.types.Operator):
-    bl_idname = 'export_scene.previz_refresh_projects'
-    bl_label = 'Refresh Previz projects'
+    bl_idname = 'export_scene.previz_refresh'
+    bl_label = 'Refresh Previz'
 
     @classmethod
     def poll(cls, context):
@@ -528,7 +528,7 @@ class PrevizPanel(bpy.types.Panel):
             )
 
         self.layout.operator(
-            'export_scene.previz_refresh_projects',
+            'export_scene.previz_refresh',
             text='Refresh',
             icon='FILE_REFRESH'
         )
