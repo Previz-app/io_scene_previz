@@ -345,6 +345,7 @@ def register():
 def unregister():
     global tasks_runner
     tasks_runner.cancel()
+    tasks_runner = None
 
     bpy.utils.unregister_class(CancelTask)
     bpy.utils.unregister_class(RemoveTask)
