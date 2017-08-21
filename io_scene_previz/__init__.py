@@ -209,6 +209,11 @@ Please paste it to Previz support.
 #############################################################################
 
 
+def set_property_if_invalid(operator, property_name, predicate, value):
+    if not predicate(getattr(operator, property_name)):
+        setattr(operator, property_name, value)
+
+
 class ApiOperatorMixin:
     api_root = StringProperty(
         name='API root',
@@ -222,21 +227,13 @@ class ApiOperatorMixin:
 
     def invoke(self, context, event):
         api_root, api_token = previz_preferences(context)
-        self.api_root = self.api_root if len(self.api_root) > 0 else api_root
-        self.api_token = self.api_token if len(self.api_token) > 0 else api_token
+        set_property_if_invalid(self, 'api_root', lambda v: len(v) > 0, api_root)
+        set_property_if_invalid(self, 'api_token', lambda v: len(v) > 0, api_token)
 
 
-class PublishScene(bpy.types.Operator):
+class PublishScene(bpy.types.Operator, ApiOperatorMixin):
     bl_idname = 'export_scene.previz_publish_scene'
     bl_label = 'Export scene to Previz'
-
-    api_root = StringProperty(
-        name='API root'
-    )
-
-    api_token = StringProperty(
-        name='API token'
-    )
 
     project_id = StringProperty(
         name='Previz project ID'
