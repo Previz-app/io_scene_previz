@@ -209,6 +209,23 @@ Please paste it to Previz support.
 #############################################################################
 
 
+class ApiOperatorMixin:
+    api_root = StringProperty(
+        name='API root',
+        options={'HIDDEN'}
+    )
+
+    api_token = StringProperty(
+        name='API token',
+        options={'HIDDEN'}
+    )
+
+    def invoke(self, context, event):
+        api_root, api_token = previz_preferences(context)
+        self.api_root = self.api_root if len(self.api_root) > 0 else api_root
+        self.api_token = self.api_token if len(self.api_token) > 0 else api_token
+
+
 class PublishScene(bpy.types.Operator):
     bl_idname = 'export_scene.previz_publish_scene'
     bl_label = 'Export scene to Previz'
@@ -304,6 +321,7 @@ class ExportScene(bpy.types.Operator, ExportHelper):
         options={'HIDDEN'},
     )
 
+    # XXX What is path_reference_mode ?
     path_mode = path_reference_mode
 
     check_extension = True
@@ -315,7 +333,7 @@ class ExportScene(bpy.types.Operator, ExportHelper):
         return {'FINISHED'}
 
 
-class RefreshProjects(bpy.types.Operator):
+class RefreshProjects(bpy.types.Operator, ApiOperatorMixin):
     bl_idname = 'export_scene.previz_refresh'
     bl_label = 'Refresh Previz'
 
@@ -332,10 +350,9 @@ class RefreshProjects(bpy.types.Operator):
             global new_plugin_version
             new_plugin_version = data
 
-        api_root, api_token = previz_preferences(context)
         task = tasks.RefreshAllTask(
-            api_root,
-            api_token,
+            self.api_root,
+            self.api_token,
             version_string,
             on_get_all,
             on_updated_plugins
@@ -343,20 +360,14 @@ class RefreshProjects(bpy.types.Operator):
         tasks_runner.add_task(context, task)
         return {'FINISHED'}
 
+    def invoke(self, context, event):
+        ApiOperatorMixin.invoke(self, context, event)
+        return self.execute(context)
+
 
 class CreateProject(bpy.types.Operator):
     bl_idname = 'export_scene.previz_new_project'
     bl_label = 'New Previz project'
-    
-    api_root = StringProperty(
-        name='API root',
-        options={'HIDDEN'}
-    )
-
-    api_token = StringProperty(
-        name='API token',
-        options={'HIDDEN'}
-    )
 
     project_name = StringProperty(
         name='Project name'
