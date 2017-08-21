@@ -47,11 +47,6 @@ version_string = '.'.join([str(x) for x in bl_info['version']])
 TEMPORARY_DIRECTORY_PREFIX = 'blender-{}-'.format(__name__)
 
 
-def previz_preferences(context):
-    prefs = context.user_preferences.addons[__name__].preferences
-    return prefs.api_root, prefs.api_token
-
-
 #############################################################################
 # QUEUE OPERATORS
 #############################################################################
@@ -423,11 +418,17 @@ class PrevizPreferences(bpy.types.AddonPreferences):
         op.url = 'https://app.previz.co/account/api'
 
 
+def previz_preferences(context):
+    prefs = context.user_preferences.addons[__name__].preferences
+    return prefs.api_root, prefs.api_token
+
+
 #########
 # Panels #
 #########
 
 
+# TODO Move to another module
 class Active(object):
     default_team = '[Need to refresh]'
     default_name = 'Select'

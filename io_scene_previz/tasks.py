@@ -5,7 +5,7 @@ import threading
 
 import previz
 
-from . import three_js_exporter
+from . import three_js_exporter # TODO shouldn't be a task
 
 
 def id_generator():
