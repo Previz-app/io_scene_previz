@@ -78,200 +78,6 @@ def log_invoke(func):
     return wrapper
 
 
-####################
-# Export to Previz #
-####################
-
-
-class ExportPreviz(utils.BackgroundTasksOperator):
-    bl_idname = 'export_scene.previz'
-    bl_label = 'Export scene to Previz'
-
-    debug_run_modal = utils.BackgroundTasksOperator.debug_run_modal
-
-    api_root = StringProperty(
-        name='API root'
-    )
-
-    api_token = StringProperty(
-        name='API token'
-    )
-
-    project_id = StringProperty(
-        name='Previz project ID'
-    )
-
-    scene_id = StringProperty(
-        name='Previz scene ID',
-    )
-
-    debug_cleanup = BoolProperty(
-        name='Cleanup temporary folder',
-        default=True,
-        options={'HIDDEN'}
-    )
-
-    debug_tmpdir = StringProperty(
-        name="Temporary directory absolute path",
-        description="Absolute path to temporarily store assets",
-        options={'HIDDEN'}
-    )
-
-    debug_run_api_requests = BoolProperty(
-        name="Run API requests",
-        description="Run the requets againsts the Previz API",
-        default=True,
-        options={'HIDDEN'}
-    )
-
-    def __init__(self):
-        utils.BackgroundTasksOperator.__init__(self)
-
-        self.g = {}
-
-    @classmethod
-    def poll(cls, context):
-        return True # Context check in the future
-
-    def build_tasks(self, context):
-        tasks = [
-            {'func': ExportPreviz.task_make_tmpdir},
-            {'func': self.build_task_report('Made temporary directory {tmpdir}')},
-            {'func': self.build_task_report('Exporting three.js JSON')},
-            {'func': ExportPreviz.task_export_three_js}
-        ]
-
-        if self.debug_run_api_requests:
-            tasks.extend([
-                {'func': self.build_task_report('Starting API calls')},
-                {'func': self.build_task_report('Getting scene JSON url')},
-                {'func': ExportPreviz.task_get_scene_json_url,
-                 'run_in_subprocess': True},
-                {'func': self.build_task_report('Uploading scene')},
-                {'func': ExportPreviz.task_update_previz_scene,
-                 'run_in_subprocess': True},
-                #{'func': self.build_task_report('uploading assets')},
-                #{'func': ExportPreviz.task_update_previz_assets,
-                 #'run_in_subprocess': True},
-                {'func': self.build_task_report('Updating state')},
-                {'func': self.build_task_report('Done all API calls')}
-            ])
-
-        if self.debug_cleanup:
-            tasks.extend([
-                {'func': ExportPreviz.task_cleanup_tmpdir},
-                {'func': self.build_task_report('Removed temporary directory {tmpdir}')}
-            ])
-
-        tasks.append({'func': self.build_task_report('Done')})
-
-        self.g['context'] = context # This is probably not the safest, but only a main process task uses it
-
-        return tasks
-
-    def build_task_report(self, msg):
-        def task(g):
-            self.report({'INFO'}, 'Previz: ' + msg.format(**g))
-            return g
-        return task
-
-    @staticmethod
-    def task_make_tmpdir(g):
-        tmpdir = pathlib.Path(g['property_tmpdir'])
-
-        make_tmp = True
-        if tmpdir.absolute() and not tmpdir.exists():
-            try:
-                tmpdir.mkdir(parents=True)
-                make_tmp = False
-            except:
-                pass
-
-        if make_tmp:
-            tmpdir = pathlib.Path(tempfile.mkdtemp(prefix=TEMPORARY_DIRECTORY_PREFIX,
-                                                   dir=bpy.context.user_preferences.filepaths.temporary_directory))
-
-        g['tmpdir'] = tmpdir
-        return g
-
-    @staticmethod
-    def task_export_three_js(g):
-        with utils.ThreeJSExportPaths(g['tmpdir']).scene.open('w') as fp:
-            previz.export(three_js_exporter.build_scene(g['context']), fp)
-        return g
-
-    @staticmethod
-    def task_cleanup_tmpdir(g):
-        shutil.rmtree(str(g['tmpdir']))
-        return g
-
-    @staticmethod
-    def task_get_scene_json_url(g):
-        scene = g['project'].scene(g['scene_id'], include=[])
-        g['scene_json'] = scene['jsonUrl']
-        return g
-
-    @staticmethod
-    def task_update_previz_scene(g):
-        p = utils.ThreeJSExportPaths(g['tmpdir'])
-        with p.scene.open('rb') as fd:
-            g['project'].update_scene(g['scene_json'], fd)
-        return g
-
-    @staticmethod
-    def task_update_previz_assets(g):
-        p = utils.ThreeJSExportPaths(g['tmpdir'])
-        local_assets_names = [x.name for x in p.assets]
-
-        for online_asset in g['project'].assets():
-            if online_asset['name'] in local_assets_names:
-                g['project'].delete_asset(online_asset['id'])
-
-        for local_asset in p.assets:
-            with local_asset.open('rb') as fd:
-                g['project'].upload_asset()
-
-        return g
-
-    def task_done(self, result):
-        self.g.update(result)
-
-    def task_args(self):
-        args = (self.g,)
-        kwargs = {}
-        return args, kwargs
-
-    def cancel(self, context):
-        self.report({'INFO'}, 'Previz export cancelled')
-        super(ExportPreviz, self).cancel(context)
-
-    @log_execute
-    def execute(self, context):
-        if len(self.api_root) == 0 :
-            self.report({'ERROR_INVALID_INPUT'}, 'No Previz API root specified')
-            return {'CANCELLED'}
-
-        if len(self.api_token) == 0 :
-            self.report({'ERROR_INVALID_INPUT'}, 'No Previz API token specified')
-            return {'CANCELLED'}
-
-        if len(self.project_id) == 0:
-            self.report({'ERROR_INVALID_INPUT'}, 'No valid Previz project ID specified')
-            return {'CANCELLED'}
-
-        if len(self.scene_id) == 0:
-            self.report({'ERROR_INVALID_INPUT'}, 'No valid Previz scene ID specified')
-            return {'CANCELLED'}
-
-        self.g['property_tmpdir'] = self.debug_tmpdir
-        self.g['project'] = previz.PrevizProject(self.api_root,
-                                                 self.api_token,
-                                                 self.project_id)
-        self.g['scene_id'] = self.scene_id
-
-        return super(ExportPreviz, self).execute(context)
-
-
 class PrevizCancelUploadException(Exception):
     pass
 
@@ -426,10 +232,7 @@ class ExportPreviz(bpy.types.Operator):
     @log_execute
     def execute(self, context):
         team_uuid = active.team(context)['id']
-        #p = previz.PrevizProject(self.api_root, self.api_token)
-        #project = p.new_project(self.project_name, team_uuid)
-        #refresh_active(context)
-        #active.set_project(context, project)
+
         fileno, path = tempfile.mkstemp(
             suffix = '.json',
             prefix = self.__class__.__name__,
@@ -450,6 +253,7 @@ class ExportPreviz(bpy.types.Operator):
         return {'FINISHED'}
 
 
+# TODO Should be an invoke
 class ExportPrevizFromUI(bpy.types.Operator):
     bl_idname = 'export_scene.previz_from_ui'
     bl_label = 'Export scene to Previz'
@@ -601,10 +405,6 @@ class CreateProject(bpy.types.Operator):
     @log_execute
     def execute(self, context):
         team_uuid = active.team(context)['id']
-        #p = previz.PrevizProject(self.api_root, self.api_token)
-        #project = p.new_project(self.project_name, team_uuid)
-        #refresh_active(context)
-        #active.set_project(context, project)
 
         task = CreateProjectTask(
             api_root = self.api_root,
@@ -736,108 +536,6 @@ class CreateScene(bpy.types.Operator):
     def invoke(self, context, event):
         self.api_root, self.api_token = previz_preferences(context)
         return context.window_manager.invoke_props_dialog(self)
-
-
-class UploadImage(utils.BackgroundTasksOperator):
-    bl_idname = 'export_scene.previz_upload_image'
-    bl_label = 'Export image to Previz'
-
-    debug_run_modal = utils.BackgroundTasksOperator.debug_run_modal
-
-    api_token = StringProperty(
-        name='API token'
-    )
-
-    project_id = IntProperty(
-        name='Previz project ID',
-        default=-1
-    )
-
-    filepath = StringProperty(
-        name='Image path',
-        subtype='FILE_PATH',
-    )
-
-    @classmethod
-    def poll(cls, context):
-        is_valid_image = hasattr(context.space_data, 'image') and not context.space_data.image.packed_file
-        
-        api_root, api_token = previz_preferences(context)
-        api_root_is_valid = len(api_root) > 0
-        api_token_is_valid = len(api_token) > 0
-        
-        active_scene_is_valid = active.is_valid(context)
-        
-        return is_valid_image and api_root_is_valid and api_token_is_valid and active_scene_is_valid
-
-    def build_tasks(self, context):
-        filepath = pathlib.Path(self.filepath)
-        tasks = [
-            {'func': self.build_task_upload(
-                        self.api_root,
-                        self.api_token,
-                        self.project_id,
-                        filepath
-                    )},
-            {'func': self.build_task_done_message(filepath)},
-        ]
-        return tasks
-
-    def build_task_upload(self, api_root, api_token, project_id, filepath):
-        def task():
-            def progress_callback(encoder):
-                print('Uploading {} {} / {}'.format(str(filepath), encoder.bytes_read, encoder.len))
-            p = previz.PrevizProject(api_root, api_token, project_id)
-            with filepath.open('rb') as fd:
-                p.upload_asset(filepath.name, fd, progress_callback)
-        return task
-
-    def build_task_done_message(self, filepath):
-        def task():
-            self.report({'INFO'}, 'Previz: Uploaded asset {!s}'.format(filepath))
-        return task
-
-    def task_done(self, result):
-        pass
-
-    def task_args(self):
-        return (), {}
-
-    def cancel(self, context):
-        self.report({'INFO'}, 'Previz: Asset {} export cancelled'.format(self.filepath))
-        super(UploadImage, self).cancel(context)
-
-    @log_execute
-    def execute(self, context):
-        if len(self.api_root) == 0 :
-            self.report({'ERROR_INVALID_INPUT'}, 'No Previz API root specified')
-            return {'CANCELLED'}
-        
-        if len(self.api_token) == 0 :
-            self.report({'ERROR_INVALID_INPUT'}, 'No Previz API token specified')
-            return {'CANCELLED'}
-
-        if self.project_id < 0:
-            self.report({'ERROR_INVALID_INPUT'}, 'No valid Previz project ID specified')
-            return {'CANCELLED'}
-
-        filepath = pathlib.Path(self.filepath)
-        if not filepath.exists():
-            self.report({'ERROR_INVALID_INPUT'}, '{!s} does not exist'.format(filepath))
-            return {'CANCELLED'}
-
-        return super(UploadImage, self).execute(context)
-
-    @log_invoke
-    def invoke(self, context, event):
-        self.api_root, self.api_token = previz_preferences(context)
-        self.project_id = active.project(context)['id']
-
-        image = context.space_data.image
-        filepath = bpy.path.abspath(image.filepath, library=image.library)
-        self.filepath = str(pathlib.Path(filepath).resolve())
-
-        return self.execute(context)
 
 
 class PrevizPreferences(bpy.types.AddonPreferences):
@@ -1053,13 +751,6 @@ def extract_all(teams_data):
                 scenes.append(scene)
     return teams
 
-def refresh_active(context):
-    api_root, api_token = previz_preferences(context)
-    p = previz.PrevizProject(api_root, api_token)
-    active.teams = extract_all(p.get_all())
-    global new_plugin_version
-    new_plugin_version = p.updated_plugin('blender', version_string)
-
 
 class RefreshProjects(bpy.types.Operator):
     bl_idname = 'export_scene.previz_refresh_projects'
@@ -1220,8 +911,9 @@ class PrevizPanel(bpy.types.Panel):
 def menu_export(self, context):
     self.layout.operator(ExportPrevizFile.bl_idname, text="Previz (three.js .json)")
 
-def menu_image_upload(self, context):
-    self.layout.operator(UploadImage.bl_idname, text="Upload image to Previz")
+# TODO To be activated when API endpoint back in API v2
+#def menu_image_upload(self, context):
+    #self.layout.operator(UploadImage.bl_idname, text="Upload image to Previz")
 
 def register():
     bpy.utils.register_class(ExportPreviz)
@@ -1230,7 +922,6 @@ def register():
     bpy.utils.register_class(RefreshProjects)
     bpy.utils.register_class(CreateProject)
     bpy.utils.register_class(CreateScene)
-    #bpy.utils.register_class(UploadImage)
 
     bpy.utils.register_class(PrevizPreferences)
 
@@ -1248,7 +939,6 @@ def unregister():
     bpy.utils.unregister_class(RefreshProjects)
     bpy.utils.unregister_class(CreateProject)
     bpy.utils.unregister_class(CreateScene)
-    #bpy.utils.unregister_class(UploadImage)
 
     bpy.utils.unregister_class(PrevizPreferences)
 
