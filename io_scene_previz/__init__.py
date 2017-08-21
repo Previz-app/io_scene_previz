@@ -209,8 +209,8 @@ Please paste it to Previz support.
 #############################################################################
 
 
-class ExportPreviz(bpy.types.Operator):
-    bl_idname = 'export_scene.previz'
+class PublishScene(bpy.types.Operator):
+    bl_idname = 'export_scene.previz_publish_scene'
     bl_label = 'Export scene to Previz'
 
     api_root = StringProperty(
@@ -260,7 +260,7 @@ class ExportPreviz(bpy.types.Operator):
 
         export_path = pathlib.Path(self.debug_export_path)
 
-        ret = bpy.ops.export_scene.previz_file(
+        ret = bpy.ops.export_scene.previz_export_scene(
             filepath=str(export_path)
         )
         if 'FINISHED' not in ret:
@@ -292,7 +292,7 @@ class ExportPreviz(bpy.types.Operator):
                 dir = bpy.context.user_preferences.filepaths.temporary_directory
             )
 
-        return bpy.ops.export_scene.previz(
+        return bpy.ops.export_scene.previz_publish_scene(
             api_root=api_root,
             api_token=api_token,
             project_id=project_id,
@@ -302,8 +302,8 @@ class ExportPreviz(bpy.types.Operator):
         )
 
 
-class ExportPrevizFile(bpy.types.Operator, ExportHelper):
-    bl_idname = 'export_scene.previz_file'
+class ExportScene(bpy.types.Operator, ExportHelper):
+    bl_idname = 'export_scene.previz_export_scene'
     bl_label = 'Export scene to a Previz file'
 
     filename_ext = ".json"
@@ -530,8 +530,8 @@ class PrevizPanel(bpy.types.Panel):
             row.operator('export_scene.previz_new_scene', text='', icon='NEW')
 
             self.layout.operator(
-                'export_scene.previz',
-                text='Update Previz scene',
+                'export_scene.previz_publish_scene',
+                text='Publish scene',
                 icon='EXPORT'
             )
 
