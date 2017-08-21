@@ -280,26 +280,18 @@ class PublishScene(bpy.types.Operator):
         return {'FINISHED'}
 
     def invoke(self, context, event):
-        api_root, api_token = previz_preferences(context)
-        project_id = active.project(context)['id']
-        scene_id = active.scene(context)['id']
+        self.api_root, self.api_token = previz_preferences(context)
+        self.project_id = active.project(context)['id']
+        self.scene_id = active.scene(context)['id']
 
-        debug_export_path = self.debug_export_path
-        if len(debug_export_path) == 0:
-            fileno, debug_export_path = tempfile.mkstemp(
+        if len(self.debug_export_path) == 0:
+            fileno, self.debug_export_path = tempfile.mkstemp(
                 suffix = '.json',
                 prefix = __name__ + '-',
                 dir = bpy.context.user_preferences.filepaths.temporary_directory
             )
 
-        return bpy.ops.export_scene.previz_publish_scene(
-            api_root=api_root,
-            api_token=api_token,
-            project_id=project_id,
-            scene_id=scene_id,
-            debug_cleanup=self.debug_cleanup,
-            debug_export_path=debug_export_path
-        )
+        return self.execute(context)
 
 
 class ExportScene(bpy.types.Operator, ExportHelper):
