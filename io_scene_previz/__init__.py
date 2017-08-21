@@ -208,10 +208,26 @@ Please paste it to Previz support.
 # PREVIZ OPERATORS
 #############################################################################
 
+default_predicates = {
+    str: lambda x: len(x) > 0
+}
 
-def set_property_if_invalid(operator, property_name, predicate, value):
-    if not predicate(getattr(operator, property_name)):
-        setattr(operator, property_name, value)
+def set_property_if_invalid(operator, property_name, value, predicate = None):
+    current_value = getattr(operator, property_name)
+    predicate = predicate if predicate is not None else default_predicates[type(current_value)]
+    value_func = value if callable(value) else lambda: value
+
+    if not predicate(current_value):
+        setattr(operator, property_name, value_func())
+
+
+def mkstemp(context, *args, **kwargs):
+    return tempfile.mkstemp(
+        prefix = __name__ + '-',
+        dir = context.user_preferences.filepaths.temporary_directory,
+        *args,
+        **kwargs
+    )
 
 
 class ApiOperatorMixin:
@@ -226,9 +242,9 @@ class ApiOperatorMixin:
     )
 
     def invoke(self, context, event):
-        api_root, api_token = previz_preferences(context)
-        set_property_if_invalid(self, 'api_root', lambda v: len(v) > 0, api_root)
-        set_property_if_invalid(self, 'api_token', lambda v: len(v) > 0, api_token)
+        prefs_api_root, prefs_api_token = previz_preferences(context)
+        set_property_if_invalid(self, 'api_root', prefs_api_root)
+        set_property_if_invalid(self, 'api_token', prefs_api_token)
 
 
 class PublishScene(bpy.types.Operator, ApiOperatorMixin):
@@ -294,17 +310,10 @@ class PublishScene(bpy.types.Operator, ApiOperatorMixin):
         return {'FINISHED'}
 
     def invoke(self, context, event):
-        self.api_root, self.api_token = previz_preferences(context)
-        self.project_id = active.project(context)['id']
-        self.scene_id = active.scene(context)['id']
-
-        if len(self.debug_export_path) == 0:
-            fileno, self.debug_export_path = tempfile.mkstemp(
-                suffix = '.json',
-                prefix = __name__ + '-',
-                dir = bpy.context.user_preferences.filepaths.temporary_directory
-            )
-
+        ApiOperatorMixin.invoke(self, context, event)
+        set_property_if_invalid(self, 'project_id', active.project(context)['id'])
+        set_property_if_invalid(self, 'scene_id', active.scene(context)['id'])
+        set_property_if_invalid(self, 'debug_export_path', lambda: mkstemp(context, suffix='.json')[1])
         return self.execute(context)
 
 
@@ -362,12 +371,17 @@ class RefreshProjects(bpy.types.Operator, ApiOperatorMixin):
         return self.execute(context)
 
 
-class CreateProject(bpy.types.Operator):
+class CreateProject(bpy.types.Operator, ApiOperatorMixin):
     bl_idname = 'export_scene.previz_new_project'
     bl_label = 'New Previz project'
 
     project_name = StringProperty(
         name='Project name'
+    )
+
+    team_id = StringProperty(
+        name='Team UUID',
+        options={'HIDDEN'}
     )
 
     @classmethod
@@ -380,13 +394,11 @@ class CreateProject(bpy.types.Operator):
             active.teams = utils.extract_all(data)
             active.set_project(context, project)
 
-        team_uuid = active.team(context)['id']
-
         task = tasks.CreateProjectTask(
             api_root = self.api_root,
             api_token = self.api_token,
             project_name = self.project_name,
-            team_uuid = team_uuid,
+            team_uuid = self.team_id,
             on_done = on_done
         )
         tasks_runner.add_task(context, task)
@@ -394,26 +406,22 @@ class CreateProject(bpy.types.Operator):
         return {'FINISHED'}
 
     def invoke(self, context, event):
-        self.api_root, self.api_token = previz_preferences(context)
+        ApiOperatorMixin.invoke(self, context, event)
+        set_property_if_invalid(self, 'team_id', active.team(context)['id'])
         return context.window_manager.invoke_props_dialog(self)
 
 
-class CreateScene(bpy.types.Operator):
+class CreateScene(bpy.types.Operator, ApiOperatorMixin):
     bl_idname = 'export_scene.previz_new_scene'
     bl_label = 'New Previz scene'
 
-    api_root = StringProperty(
-        name='API root',
-        options={'HIDDEN'}
-    )
-
-    api_token = StringProperty(
-        name='API token',
-        options={'HIDDEN'}
-    )
-
     scene_name = StringProperty(
         name='Scene name'
+    )
+
+    project_id = StringProperty(
+        name='Project UUID',
+        options={'HIDDEN'}
     )
 
     # XXX check if a valid project is set
@@ -440,7 +448,8 @@ class CreateScene(bpy.types.Operator):
         return {'FINISHED'}
 
     def invoke(self, context, event):
-        self.api_root, self.api_token = previz_preferences(context)
+        ApiOperatorMixin.invoke(self, context, event)
+        set_property_if_invalid(self, 'project_id', active.project(context)['id'])
         return context.window_manager.invoke_props_dialog(self)
 
 
