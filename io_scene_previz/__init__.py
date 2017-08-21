@@ -235,6 +235,11 @@ class ExportPreviz(bpy.types.Operator):
         options={'HIDDEN'}
     )
 
+    debug_export_path = StringProperty(
+        name='Force export path',
+        options={'HIDDEN'}
+    )
+
     @classmethod
     def poll(cls, context):
         api_root, api_token = previz_preferences(context)
@@ -253,14 +258,7 @@ class ExportPreviz(bpy.types.Operator):
             if debug_cleanup and export_path.exists():
                 export_path.unlink()
 
-        team_uuid = active.team(context)['id']
-
-        fileno, path = tempfile.mkstemp(
-            suffix = '.json',
-            prefix = self.__class__.__name__,
-            dir = bpy.context.user_preferences.filepaths.temporary_directory)
-
-        export_path = pathlib.Path(path)
+        export_path = pathlib.Path(self.debug_export_path)
 
         task = tasks.PublishSceneTask(
             api_root = self.api_root,
@@ -279,11 +277,21 @@ class ExportPreviz(bpy.types.Operator):
         project_id = active.project(context)['id']
         scene_id = active.scene(context)['id']
 
+        debug_export_path = self.debug_export_path
+        if len(debug_export_path) == 0:
+            fileno, debug_export_path = tempfile.mkstemp(
+                suffix = '.json',
+                prefix = __name__ + '-',
+                dir = bpy.context.user_preferences.filepaths.temporary_directory
+            )
+
         return bpy.ops.export_scene.previz(
             api_root=api_root,
             api_token=api_token,
             project_id=project_id,
-            scene_id=scene_id
+            scene_id=scene_id,
+            debug_cleanup=self.debug_cleanup,
+            debug_export_path=debug_export_path
         )
 
 
