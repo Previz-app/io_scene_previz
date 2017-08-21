@@ -220,10 +220,6 @@ class ExportPreviz(bpy.types.Operator):
         options={'HIDDEN'}
     )
 
-    def __init__(self):
-        utils.BackgroundTasksOperator.__init__(self)
-
-        self.g = {}
 
     @classmethod
     def poll(cls, context):
