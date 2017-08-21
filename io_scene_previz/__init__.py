@@ -7,6 +7,10 @@ import tempfile
 import time
 import threading
 
+import bpy
+from bpy.props import BoolProperty, EnumProperty, IntProperty, StringProperty
+from bpy_extras.io_utils import ExportHelper, path_reference_mode
+
 # Dependencies path, depending if we are in an installed plugin
 # or in development move within a virtual env
 def sitedir():
@@ -18,9 +22,7 @@ def sitedir():
     return str(path.resolve())
 site.addsitedir(sitedir())
 
-import bpy
-from bpy.props import BoolProperty, EnumProperty, StringProperty
-from bpy_extras.io_utils import ExportHelper, path_reference_mode
+import pyperclip
 
 import previz
 from . import tasks
@@ -83,6 +85,112 @@ def log_invoke(func):
     return wrapper
 
 
+#############################################################################
+# QUEUE OPERATORS
+#############################################################################
+
+
+class ManageQueue(bpy.types.Operator):
+    bl_idname = 'export_scene.previz_manage_queue'
+    bl_label = 'Manage Previz task queue'
+
+    process_polling_interval = 1 # Needs to be a debug User Preferences flag
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.timer = None
+
+    def execute(self, context):
+        if tasks.tasks_runner.is_empty:
+            self.cleanup(context)
+            return {'FINISHED'}
+        self.register_timer(context)
+        context.window_manager.modal_handler_add(self)
+        return {'RUNNING_MODAL'}
+
+    def cancel(self, context):
+        self.cleanup(context)
+
+    def modal(self, context, event):
+        if event.type == 'ESC':
+            return {'CANCELED'}
+
+        if event.type == 'TIMER':
+            return self.handle_timer_event(context, event)
+
+        return {'PASS_THROUGH'}
+
+    def handle_timer_event(self, context, event):
+        if tasks.tasks_runner.is_empty:
+            self.cleanup(context)
+            return {'FINISHED'}
+        tasks.tasks_runner.tick(context)
+        return {'RUNNING_MODAL'}
+
+    def cleanup(self, context):
+        tasks.tasks_runner.cancel()
+        self.unregister_timer(context)
+
+    def register_timer(self, context):
+        if self.timer is None:
+            self.timer = context.window_manager.event_timer_add(self.process_polling_interval, context.window)
+
+    def unregister_timer(self, context):
+        if self.timer is not None:
+            context.window_manager.event_timer_remove(self.timer)
+            self.timer = None
+
+
+class CancelTask(bpy.types.Operator):
+    bl_idname = 'export_scene.previz_cancel_task'
+    bl_label = 'Cancel Previz task'
+
+    task_id = IntProperty(
+        name = 'Task ID',
+        default = -1
+    )
+
+    def execute(self, context):
+        tasks.tasks_runner.tasks[self.task_id].cancel()
+        return {'FINISHED'}
+
+
+class ShowTaskError(bpy.types.Operator):
+    bl_idname = 'export_scene.previz_show_task_error'
+    bl_label = 'Show Previz task error'
+
+    task_id = IntProperty(
+        name = 'Task ID',
+        default = -1
+    )
+
+    def execute(self, context):
+        task = tasks.tasks_runner.tasks[self.task_id]
+        self.report({'ERROR'}, task2report(task))
+        debug_info = tasks.task2debuginfo(task)
+        pyperclip.copy(debug_info)
+        print(debug_info)
+        return {'FINISHED'}
+
+
+class RemoveTask(bpy.types.Operator):
+    bl_idname = 'export_scene.previz_remove_task'
+    bl_label = 'Remove Previz task'
+
+    task_id = IntProperty(
+        name = 'Task ID',
+        default = -1
+    )
+
+    def execute(self, context):
+        tasks.tasks_runner.remove_task(self.task_id)
+        return {'FINISHED'}
+
+
+#############################################################################
+# PREVIZ OPERATORS
+#############################################################################
 
 class ExportPreviz(bpy.types.Operator):
     bl_idname = 'export_scene.previz'
@@ -313,7 +421,7 @@ class PrevizPreferences(bpy.types.AddonPreferences):
 
 
 #########
-# Panel #
+# Panels #
 #########
 
 
@@ -597,6 +705,43 @@ class PrevizPanel(bpy.types.Panel):
             op.url = new_plugin_version['downloadUrl']
 
 
+class Panel(bpy.types.Panel):
+    bl_label = "PrevizProgress"
+    bl_idname = "SCENE_PT_previz_test"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+
+    def draw(self, context):
+        for id, task in tasks.tasks_runner.tasks.items():
+            row = self.layout.row()
+            label = '{} ({})'.format(task.label, task.state)
+            if task.progress is not None:
+                label += ' {:.0f}%'.format(task.progress*100)
+            row.label(label, icon='RIGHTARROW_THIN')
+
+            if task.status == tasks.ERROR:
+                row.operator(
+                    'export_scene.previz_show_task_error',
+                    text='',
+                    icon='ERROR').task_id = id
+
+            if task.is_cancelable and not task.is_finished:
+                row.operator(
+                    'export_scene.previz_cancel_task',
+                    text='',
+                    icon='CANCEL').task_id = id
+
+            if task.is_finished:
+                icon = 'FILE_TICK' if task.status == tasks.DONE else 'X'
+                row.operator(
+                    'export_scene.previz_remove_task',
+                    text='',
+                    icon=icon).task_id = id
+
+            row.enabled = task.status != tasks.CANCELING
+
+
 ################
 # Registration #
 ################
@@ -605,40 +750,24 @@ class PrevizPanel(bpy.types.Panel):
 def menu_export(self, context):
     self.layout.operator(ExportPrevizFile.bl_idname, text="Previz (three.js .json)")
 
+
 # TODO To be activated when API endpoint back in API v2
 #def menu_image_upload(self, context):
     #self.layout.operator(UploadImage.bl_idname, text="Upload image to Previz")
 
 def register():
-    bpy.utils.register_class(ExportPreviz)
-    bpy.utils.register_class(ExportPrevizFromUI)
-    bpy.utils.register_class(ExportPrevizFile)
-    bpy.utils.register_class(RefreshProjects)
-    bpy.utils.register_class(CreateProject)
-    bpy.utils.register_class(CreateScene)
+    tasks.register()
 
-    bpy.utils.register_class(PrevizPreferences)
-
-    bpy.utils.register_class(PrevizPanel)
+    bpy.utils.register_module(__name__)
 
     bpy.types.INFO_MT_file_export.append(menu_export)
     #bpy.types.IMAGE_MT_image.append(menu_image_upload)
 
-    tasks.register()
 
 def unregister():
-    bpy.utils.unregister_class(ExportPreviz)
-    bpy.utils.unregister_class(ExportPrevizFromUI)
-    bpy.utils.unregister_class(ExportPrevizFile)
-    bpy.utils.unregister_class(RefreshProjects)
-    bpy.utils.unregister_class(CreateProject)
-    bpy.utils.unregister_class(CreateScene)
-
-    bpy.utils.unregister_class(PrevizPreferences)
-
-    bpy.utils.unregister_class(PrevizPanel)
-
     bpy.types.INFO_MT_file_export.remove(menu_export)
     #bpy.types.IMAGE_MT_image.remove(menu_image_upload)
+
+    bpy.utils.unregister_module(__name__)
 
     tasks.unregister()

@@ -10,8 +10,6 @@ import traceback
 import bpy
 from bpy.props import IntProperty
 
-import pyperclip
-
 import previz
 
 from . import three_js_exporter
@@ -153,20 +151,6 @@ TASK_UPDATE = 'TASK_UPDATE'
 TASK_ERROR = 'TASK_ERROR'
 
 
-class CancelTask(bpy.types.Operator):
-    bl_idname = 'export_scene.previz_cancel_task'
-    bl_label = 'Cancel Previz task'
-
-    task_id = IntProperty(
-        name = 'Task ID',
-        default = -1
-    )
-
-    def execute(self, context):
-        tasks_runner.tasks[self.task_id].cancel()
-        return {'FINISHED'}
-
-
 def task2debuginfo(task):
     type, exception, tb = task.error
     d = datetime.datetime.now()
@@ -208,38 +192,6 @@ See the console for debug information.
 The debug information has been copied to the clipboard.
 Please paste it to Previz support.
 '''.format(task.label, exception.__class__.__name__, exception)
-
-
-class ShowTaskError(bpy.types.Operator):
-    bl_idname = 'export_scene.previz_show_task_error'
-    bl_label = 'Show Previz task error'
-
-    task_id = IntProperty(
-        name = 'Task ID',
-        default = -1
-    )
-
-    def execute(self, context):
-        task = tasks_runner.tasks[self.task_id]
-        self.report({'ERROR'}, task2report(task))
-        debug_info = task2debuginfo(task)
-        pyperclip.copy(debug_info)
-        print(debug_info)
-        return {'FINISHED'}
-
-
-class RemoveTask(bpy.types.Operator):
-    bl_idname = 'export_scene.previz_remove_task'
-    bl_label = 'Remove Previz task'
-
-    task_id = IntProperty(
-        name = 'Task ID',
-        default = -1
-    )
-
-    def execute(self, context):
-        tasks_runner.remove_task(self.task_id)
-        return {'FINISHED'}
 
 
 class RefreshAllTask(Task):
@@ -580,103 +532,7 @@ class PublishSceneTask(Task):
                or (time.time() - self.last_progress_notify_date) > .25
 
 
-
-class ManageQueue(bpy.types.Operator):
-    bl_idname = 'export_scene.previz_manage_queue'
-    bl_label = 'Manage Previz task queue'
-
-    process_polling_interval = 1 # Needs to be a debug User Preferences flag
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-        self.timer = None
-
-    def execute(self, context):
-        if tasks_runner.is_empty:
-            self.cleanup(context)
-            return {'FINISHED'}
-        self.register_timer(context)
-        context.window_manager.modal_handler_add(self)
-        return {'RUNNING_MODAL'}
-
-    def cancel(self, context):
-        self.cleanup(context)
-
-    def modal(self, context, event):
-        if event.type == 'ESC':
-            return {'CANCELED'}
-
-        if event.type == 'TIMER':
-            return self.handle_timer_event(context, event)
-
-        return {'PASS_THROUGH'}
-
-    def handle_timer_event(self, context, event):
-        if tasks_runner.is_empty:
-            self.cleanup(context)
-            return {'FINISHED'}
-        tasks_runner.tick(context)
-        return {'RUNNING_MODAL'}
-
-    def cleanup(self, context):
-        tasks_runner.cancel()
-        self.unregister_timer(context)
-
-    def register_timer(self, context):
-        if self.timer is None:
-            self.timer = context.window_manager.event_timer_add(self.process_polling_interval, context.window)
-
-    def unregister_timer(self, context):
-        if self.timer is not None:
-            context.window_manager.event_timer_remove(self.timer)
-            self.timer = None
-
-
-class Panel(bpy.types.Panel):
-    bl_label = "PrevizProgress"
-    bl_idname = "SCENE_PT_previz_test"
-    bl_space_type = "PROPERTIES"
-    bl_region_type = "WINDOW"
-    bl_context = "scene"
-
-    def draw(self, context):
-        for id, task in tasks_runner.tasks.items():
-            row = self.layout.row()
-            label = '{} ({})'.format(task.label, task.state)
-            if task.progress is not None:
-                label += ' {:.0f}%'.format(task.progress*100)
-            row.label(label, icon='RIGHTARROW_THIN')
-
-            if task.status == ERROR:
-                row.operator(
-                    'export_scene.previz_show_task_error',
-                    text='',
-                    icon='ERROR').task_id = id
-
-            if task.is_cancelable and not task.is_finished:
-                row.operator(
-                    'export_scene.previz_cancel_task',
-                    text='',
-                    icon='CANCEL').task_id = id
-
-            if task.is_finished:
-                icon = 'FILE_TICK' if task.status == DONE else 'X'
-                row.operator(
-                    'export_scene.previz_remove_task',
-                    text='',
-                    icon=icon).task_id = id
-
-            row.enabled = task.status != CANCELING
-
-
 def register():
-    bpy.utils.register_class(CancelTask)
-    bpy.utils.register_class(RemoveTask)
-    bpy.utils.register_class(Panel)
-    bpy.utils.register_class(ManageQueue)
-    bpy.utils.register_class(ShowTaskError)
-
     global tasks_runner
     tasks_runner = TasksRunner()
 
@@ -689,9 +545,3 @@ def unregister():
     global tasks_runner
     tasks_runner.cancel()
     tasks_runner = None
-
-    bpy.utils.unregister_class(CancelTask)
-    bpy.utils.unregister_class(RemoveTask)
-    bpy.utils.unregister_class(Panel)
-    bpy.utils.unregister_class(ManageQueue)
-    bpy.utils.unregister_class(ShowTaskError)
