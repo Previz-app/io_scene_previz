@@ -339,11 +339,6 @@ class RefreshProjects(bpy.types.Operator, ApiOperatorMixin):
     bl_idname = 'export_scene.previz_refresh'
     bl_label = 'Refresh Previz'
 
-    @classmethod
-    def poll(cls, context):
-        api_root, api_token = previz_preferences(context)
-        return len(api_root) > 0 and len(api_token) > 0
-
     def execute(self, context):
         def on_get_all(context, data):
             active.teams = utils.extract_all(data)
@@ -380,11 +375,6 @@ class CreateProject(bpy.types.Operator, ApiOperatorMixin):
         options={'HIDDEN'}
     )
 
-    @classmethod
-    def poll(cls, context):
-        api_root, api_token = previz_preferences(context)
-        return len(api_root) > 0 and len(api_token) > 0
-
     def execute(self, context):
         def on_done(context, data, project):
             active.teams = utils.extract_all(data)
@@ -419,13 +409,6 @@ class CreateScene(bpy.types.Operator, ApiOperatorMixin):
         name='Project UUID',
         options={'HIDDEN'}
     )
-
-    # XXX check if a valid project is set
-    @classmethod
-    def poll(cls, context):
-        api_root, api_token = previz_preferences(context)
-        is_project_valid = active.project(context) is not None
-        return len(api_root) > 0 and len(api_token) > 0 and is_project_valid
 
     def execute(self, context):
         def on_done(context, data, scene):
