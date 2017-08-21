@@ -23,7 +23,7 @@ from bpy.props import BoolProperty, EnumProperty, StringProperty
 from bpy_extras.io_utils import ExportHelper, path_reference_mode
 
 import previz
-from . import progress
+from . import tasks
 from . import three_js_exporter
 
 
@@ -87,9 +87,9 @@ class PrevizCancelUploadException(Exception):
     pass
 
 
-class PublishSceneTask(progress.Task):
+class PublishSceneTask(tasks.Task):
     def __init__(self, debug_cleanup = True, **kwargs):
-        progress.Task.__init__(self)
+        tasks.Task.__init__(self)
 
         self.label = 'Publish scene'
 
@@ -127,7 +127,7 @@ class PublishSceneTask(progress.Task):
 
     def cancel(self):
         self.canceling()
-        self.queue_to_worker.put((progress.REQUEST_CANCEL, None))
+        self.queue_to_worker.put((tasks.REQUEST_CANCEL, None))
 
     @staticmethod
     def thread_run(queue_to_worker, queue_to_main, api_root, api_token, project_id, scene_id, export_path):
@@ -136,11 +136,11 @@ class PublishSceneTask(progress.Task):
                 msg, data = queue_to_worker.get()
                 queue_to_worker.task_done()
 
-                if msg == progress.REQUEST_CANCEL:
+                if msg == tasks.REQUEST_CANCEL:
                     raise PrevizCancelUploadException
 
             data = ('progress', read_so_far / size)
-            msg = (progress.TASK_UPDATE, data)
+            msg = (tasks.TASK_UPDATE, data)
             queue_to_main.put(msg)
 
         try:
@@ -150,14 +150,14 @@ class PublishSceneTask(progress.Task):
             with export_path.open('rb') as fd:
                 p.update_scene(url, fd, on_progress)
 
-            msg = (progress.TASK_DONE, None)
+            msg = (tasks.TASK_DONE, None)
             queue_to_main.put(msg)
 
         except PrevizCancelUploadException:
-            queue_to_main.put((progress.RESPOND_CANCELED, None))
+            queue_to_main.put((tasks.RESPOND_CANCELED, None))
 
         except Exception:
-            msg = (progress.TASK_ERROR, sys.exc_info())
+            msg = (tasks.TASK_ERROR, sys.exc_info())
             queue_to_main.put(msg)
 
     def tick(self, context):
@@ -165,17 +165,17 @@ class PublishSceneTask(progress.Task):
             msg, data = self.queue_to_main.get()
 
             if not self.is_finished:
-                if msg == progress.RESPOND_CANCELED:
+                if msg == tasks.RESPOND_CANCELED:
                     self.finished_time = time.time()
                     self.state = 'Canceled'
-                    self.status = progress.CANCELED
+                    self.status = tasks.CANCELED
                     self.notify()
 
-                if msg == progress.TASK_DONE:
+                if msg == tasks.TASK_DONE:
                     self.progress = 1
                     self.done()
 
-                if msg == progress.TASK_UPDATE:
+                if msg == tasks.TASK_UPDATE:
                     request, data = data
 
                     if request == 'progress':
@@ -184,7 +184,7 @@ class PublishSceneTask(progress.Task):
                             self.progress = data
                             self.notify()
 
-                if msg == progress.TASK_ERROR:
+                if msg == tasks.TASK_ERROR:
                     exc_info = data
                     self.set_error(exc_info)
 
@@ -249,7 +249,7 @@ class ExportPreviz(bpy.types.Operator):
             export_path = export_path,
             debug_cleanup = False
         )
-        progress.tasks_runner.add_task(context, task)
+        tasks.tasks_runner.add_task(context, task)
 
         return {'FINISHED'}
 
@@ -307,9 +307,9 @@ class ExportPrevizFile(bpy.types.Operator, ExportHelper):
         return {'FINISHED'}
 
 
-class CreateProjectTask(progress.Task):
+class CreateProjectTask(tasks.Task):
     def __init__(self, **kwargs):
-        progress.Task.__init__(self)
+        tasks.Task.__init__(self)
 
         self.label = 'New project'
 
@@ -340,17 +340,17 @@ class CreateProjectTask(progress.Task):
             p = previz.PrevizProject(api_root, api_token)
 
             data = ('new_project', p.new_project(project_name, team_uuid))
-            msg = (progress.TASK_UPDATE, data)
+            msg = (tasks.TASK_UPDATE, data)
             queue_to_main.put(msg)
 
             data = ('get_all', p.get_all())
-            msg = (progress.TASK_UPDATE, data)
+            msg = (tasks.TASK_UPDATE, data)
             queue_to_main.put(msg)
 
-            msg = (progress.TASK_DONE, None)
+            msg = (tasks.TASK_DONE, None)
             queue_to_main.put(msg)
         except Exception:
-            msg = (progress.TASK_ERROR, sys.exc_info())
+            msg = (tasks.TASK_ERROR, sys.exc_info())
             queue_to_main.put(msg)
 
     def tick(self, context):
@@ -358,10 +358,10 @@ class CreateProjectTask(progress.Task):
             msg, data = self.queue_to_main.get()
 
             if not self.is_finished:
-                if msg == progress.TASK_DONE:
+                if msg == tasks.TASK_DONE:
                     self.done()
 
-                if msg == progress.TASK_UPDATE:
+                if msg == tasks.TASK_UPDATE:
                     self.notify()
 
                     request, data = data
@@ -373,7 +373,7 @@ class CreateProjectTask(progress.Task):
                         active.teams = extract_all(data)
                         active.set_project(context, self.project)
 
-                if msg == progress.TASK_ERROR:
+                if msg == tasks.TASK_ERROR:
                     exc_info = data
                     self.set_error(exc_info)
 
@@ -413,7 +413,7 @@ class CreateProject(bpy.types.Operator):
             project_name = self.project_name,
             team_uuid = team_uuid
         )
-        progress.tasks_runner.add_task(context, task)
+        tasks.tasks_runner.add_task(context, task)
 
         return {'FINISHED'}
 
@@ -423,9 +423,9 @@ class CreateProject(bpy.types.Operator):
         return context.window_manager.invoke_props_dialog(self)
 
 
-class CreateSceneTask(progress.Task):
+class CreateSceneTask(tasks.Task):
     def __init__(self, **kwargs):
-        progress.Task.__init__(self)
+        tasks.Task.__init__(self)
 
         self.label = 'New scene'
 
@@ -456,17 +456,17 @@ class CreateSceneTask(progress.Task):
             p = previz.PrevizProject(api_root, api_token, project_id)
 
             data = ('new_scene', p.new_scene(scene_name))
-            msg = (progress.TASK_UPDATE, data)
+            msg = (tasks.TASK_UPDATE, data)
             queue_to_main.put(msg)
 
             data = ('get_all', p.get_all())
-            msg = (progress.TASK_UPDATE, data)
+            msg = (tasks.TASK_UPDATE, data)
             queue_to_main.put(msg)
 
-            msg = (progress.TASK_DONE, None)
+            msg = (tasks.TASK_DONE, None)
             queue_to_main.put(msg)
         except Exception:
-            msg = (progress.TASK_ERROR, sys.exc_info())
+            msg = (tasks.TASK_ERROR, sys.exc_info())
             queue_to_main.put(msg)
 
     def tick(self, context):
@@ -474,10 +474,10 @@ class CreateSceneTask(progress.Task):
             msg, data = self.queue_to_main.get()
 
             if not self.is_finished:
-                if msg == progress.TASK_DONE:
+                if msg == tasks.TASK_DONE:
                     self.done()
 
-                if msg == progress.TASK_UPDATE:
+                if msg == tasks.TASK_UPDATE:
                     self.notify()
 
                     request, data = data
@@ -489,7 +489,7 @@ class CreateSceneTask(progress.Task):
                         active.teams = extract_all(data)
                         active.set_scene(context, self.scene)
 
-                if msg == progress.TASK_ERROR:
+                if msg == tasks.TASK_ERROR:
                     exc_info = data
                     self.set_error(exc_info)
 
@@ -529,7 +529,7 @@ class CreateScene(bpy.types.Operator):
             scene_name = self.scene_name,
             project_id = active.project(context)['id']
         )
-        progress.tasks_runner.add_task(context, task)
+        tasks.tasks_runner.add_task(context, task)
 
         return {'FINISHED'}
 
@@ -766,13 +766,13 @@ class RefreshProjects(bpy.types.Operator):
     def execute(self, context):
         api_root, api_token = previz_preferences(context)
         task = RefreshAllTask(api_root, api_token, version_string)
-        progress.tasks_runner.add_task(context, task)
+        tasks.tasks_runner.add_task(context, task)
         return {'FINISHED'}
 
 
-class RefreshAllTask(progress.Task):
+class RefreshAllTask(tasks.Task):
     def __init__(self, api_root, api_token, version_string):
-        progress.Task.__init__(self)
+        tasks.Task.__init__(self)
 
         self.label = 'Refresh'
 
@@ -799,17 +799,17 @@ class RefreshAllTask(progress.Task):
             p = previz.PrevizProject(api_root, api_token)
 
             data = ('get_all', p.get_all())
-            msg = (progress.TASK_UPDATE, data)
+            msg = (tasks.TASK_UPDATE, data)
             queue_to_main.put(msg)
 
             data = ('updated_plugin', p.updated_plugin('blender', version_string))
-            msg = (progress.TASK_UPDATE, data)
+            msg = (tasks.TASK_UPDATE, data)
             queue_to_main.put(msg)
 
-            msg = (progress.TASK_DONE, None)
+            msg = (tasks.TASK_DONE, None)
             queue_to_main.put(msg)
         except Exception:
-            msg = (progress.TASK_ERROR, sys.exc_info())
+            msg = (tasks.TASK_ERROR, sys.exc_info())
             queue_to_main.put(msg)
 
     def tick(self, context):
@@ -817,10 +817,10 @@ class RefreshAllTask(progress.Task):
             msg, data = self.queue_to_main.get()
 
             if not self.is_finished:
-                if msg == progress.TASK_DONE:
+                if msg == tasks.TASK_DONE:
                     self.done()
 
-                if msg == progress.TASK_UPDATE:
+                if msg == tasks.TASK_UPDATE:
                     self.progress += .5
                     self.notify()
 
@@ -833,7 +833,7 @@ class RefreshAllTask(progress.Task):
                         global new_plugin_version
                         new_plugin_version = data
 
-                if msg == progress.TASK_ERROR:
+                if msg == tasks.TASK_ERROR:
                     exc_info = data
                     self.set_error(exc_info)
 
@@ -931,7 +931,7 @@ def register():
     bpy.types.INFO_MT_file_export.append(menu_export)
     #bpy.types.IMAGE_MT_image.append(menu_image_upload)
 
-    progress.register()
+    tasks.register()
 
 def unregister():
     bpy.utils.unregister_class(ExportPreviz)
@@ -948,4 +948,4 @@ def unregister():
     bpy.types.INFO_MT_file_export.remove(menu_export)
     #bpy.types.IMAGE_MT_image.remove(menu_image_upload)
 
-    progress.unregister()
+    tasks.unregister()
