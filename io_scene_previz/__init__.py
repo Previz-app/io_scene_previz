@@ -52,41 +52,6 @@ def previz_preferences(context):
     return prefs.api_root, prefs.api_token
 
 
-###################
-# Debugging tools #
-###################
-
-
-def log_function_name(func):
-    if bpy.app.debug:
-        print('====', func.__qualname__)
-
-
-def log_call(func):
-    def wrapper(*args, **kwargs):
-        log_function_name(func)
-        return func(*args, **kwargs)
-
-    return wrapper
-
-
-def log_execute(func):
-    def wrapper(self, context):
-        log_function_name(func)
-        return func(self, context)
-    return wrapper
-
-
-log_draw = log_execute
-
-
-def log_invoke(func):
-    def wrapper(self, context, event):
-        log_function_name(func)
-        return func(self, context, event)
-    return wrapper
-
-
 #############################################################################
 # QUEUE OPERATORS
 #############################################################################
@@ -267,7 +232,6 @@ class ExportPreviz(bpy.types.Operator):
     def poll(cls, context):
         return True # Context check in the future
 
-    @log_execute
     def execute(self, context):
         team_uuid = active.team(context)['id']
 
@@ -308,7 +272,6 @@ class ExportPrevizFromUI(bpy.types.Operator):
                and active_scene_is_valid \
                and operator_is_valid
 
-    @log_invoke
     def invoke(self, context, event):
         api_root, api_token = previz_preferences(context)
         project_id = active.project(context)['id']
@@ -336,7 +299,6 @@ class ExportPrevizFile(bpy.types.Operator, ExportHelper):
 
     check_extension = True
 
-    @log_execute
     def execute(self, context):
         filepath = pathlib.Path(self.as_keywords()['filepath'])
         with filepath.open('w') as fp:
@@ -367,7 +329,6 @@ class CreateProject(bpy.types.Operator):
         api_root, api_token = previz_preferences(context)
         return len(api_root) > 0 and len(api_token) > 0
 
-    @log_execute
     def execute(self, context):
         def on_done(context, data, project):
             active.teams = extract_all(data)
@@ -386,7 +347,6 @@ class CreateProject(bpy.types.Operator):
 
         return {'FINISHED'}
 
-    @log_invoke
     def invoke(self, context, event):
         self.api_root, self.api_token = previz_preferences(context)
         return context.window_manager.invoke_props_dialog(self)
@@ -417,7 +377,6 @@ class CreateScene(bpy.types.Operator):
         is_project_valid = active.project(context) is not None
         return len(api_root) > 0 and len(api_token) > 0 and is_project_valid
 
-    @log_execute
     def execute(self, context):
         def on_done(context, data, scene):
             active.teams = extract_all(data)
@@ -434,7 +393,6 @@ class CreateScene(bpy.types.Operator):
 
         return {'FINISHED'}
 
-    @log_invoke
     def invoke(self, context, event):
         self.api_root, self.api_token = previz_preferences(context)
         return context.window_manager.invoke_props_dialog(self)
@@ -665,7 +623,6 @@ class RefreshProjects(bpy.types.Operator):
         api_root, api_token = previz_preferences(context)
         return len(api_root) > 0 and len(api_token) > 0
 
-    @log_execute
     def execute(self, context):
         def on_get_all(context, data):
             active.teams = extract_all(data)
@@ -710,7 +667,6 @@ class PrevizPanel(bpy.types.Panel):
         update=active.scene_menu_update()
     )
 
-    @log_draw
     def draw(self, context):
         api_root, api_token = previz_preferences(context)
 
