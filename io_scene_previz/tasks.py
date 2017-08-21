@@ -1,11 +1,7 @@
-import datetime
-import getpass
-import platform
 import queue
 import sys
 import time
 import threading
-import traceback
 
 import previz
 
