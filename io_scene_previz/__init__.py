@@ -536,15 +536,6 @@ class PrevizPanel(bpy.types.Panel):
             op = self.layout.operator('wm.url_open', text=text, icon='URL')
             op.url = new_plugin_version['downloadUrl']
 
-
-class Panel(bpy.types.Panel):
-    bl_label = "PrevizProgress"
-    bl_idname = "SCENE_PT_previz_test"
-    bl_space_type = "PROPERTIES"
-    bl_region_type = "WINDOW"
-    bl_context = "scene"
-
-    def draw(self, context):
         for id, task in tasks_runner.tasks.items():
             row = self.layout.row()
             label = '{} ({})'.format(task.label, task.state)
