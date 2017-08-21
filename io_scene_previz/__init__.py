@@ -49,6 +49,16 @@ TEMPORARY_DIRECTORY_PREFIX = 'blender-{}-'.format(__name__)
 
 
 #############################################################################
+# GLOBALS
+#############################################################################
+
+
+active = utils.Active()
+new_plugin_version = None
+tasks_runner = None
+
+
+#############################################################################
 # QUEUE OPERATORS
 #############################################################################
 
@@ -427,12 +437,6 @@ def previz_preferences(context):
 #########
 # Panels #
 #########
-
-
-# TODO Move to another module
-
-active = utils.Active()
-new_plugin_version = None
 
 
 class RefreshProjects(bpy.types.Operator):
