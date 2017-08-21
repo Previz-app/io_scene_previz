@@ -7,12 +7,10 @@ import time
 import threading
 import traceback
 
-import bpy
-from bpy.props import IntProperty
-
 import previz
 
 from . import three_js_exporter
+
 
 def id_generator():
     id = -1
