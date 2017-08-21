@@ -164,7 +164,6 @@ class CancelTask(bpy.types.Operator):
     )
 
     def execute(self, context):
-        self.report({'INFO'}, 'Previz: Cancel task {}'.format(self.task_id))
         tasks_runner.tasks[self.task_id].cancel()
         return {'FINISHED'}
 
@@ -240,7 +239,6 @@ class RemoveTask(bpy.types.Operator):
     )
 
     def execute(self, context):
-        self.report({'INFO'}, 'Previz: Remove task {}'.format(self.task_id))
         tasks_runner.remove_task(self.task_id)
         return {'FINISHED'}
 
