@@ -27,6 +27,7 @@ class TasksRunner(object):
 
         self.tasks = {}
         self.on_task_changed = []
+        self.on_queue_started = []
 
         self.id_generator = id_generator()
 
@@ -38,7 +39,8 @@ class TasksRunner(object):
         task.run(context)
 
         if len(self.tasks) == 1:
-            bpy.ops.export_scene.previz_manage_queue()
+            for cb in self.on_queue_started:
+                cb(self)
 
         return id
 

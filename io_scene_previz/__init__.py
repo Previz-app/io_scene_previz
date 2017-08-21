@@ -755,6 +755,10 @@ def register_tasks_runner():
         bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
     tasks_runner.on_task_changed.append(refresh_panel)
 
+    def manage_queue(*args, **kwargs):
+        bpy.ops.export_scene.previz_manage_queue()
+    tasks_runner.on_queue_started.append(manage_queue)
+
 
 def unregister_tasks_runner():
     global tasks_runner
