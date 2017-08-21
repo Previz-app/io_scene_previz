@@ -609,7 +609,7 @@ def unregister_tasks_runner():
 
 
 def menu_export(self, context):
-    self.layout.operator(ExportPrevizFile.bl_idname, text="Previz (three.js .json)")
+    self.layout.operator(ExportScene.bl_idname, text="Previz (three.js .json)")
 
 
 # TODO To be activated when API endpoint back in API v2
