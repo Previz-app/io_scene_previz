@@ -381,8 +381,6 @@ class PublishSceneTask(Task):
 
         self.label = 'Publish scene'
 
-        self.export_path = kwargs['export_path']
-
         self.last_progress_notify_date = None
 
         self.queue_to_worker = queue.Queue()
@@ -395,16 +393,6 @@ class PublishSceneTask(Task):
 
     def run(self, context):
         super().run(context)
-
-        self.progress = 0
-        self.label = 'Exporting scene'
-        self.notify()
-
-        with self.export_path.open('w') as fp:
-            previz.export(three_js_exporter.build_scene(context), fp)
-
-        self.label = 'Publishing scene'
-        self.notify()
 
         self.thread.start()
 

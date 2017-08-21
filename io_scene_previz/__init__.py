@@ -260,6 +260,13 @@ class ExportPreviz(bpy.types.Operator):
 
         export_path = pathlib.Path(self.debug_export_path)
 
+        ret = bpy.ops.export_scene.previz_file(
+            filepath=str(export_path)
+        )
+        if 'FINISHED' not in ret:
+            on_done()
+            return ret
+
         task = tasks.PublishSceneTask(
             api_root = self.api_root,
             api_token = self.api_token,
