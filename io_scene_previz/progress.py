@@ -2,19 +2,14 @@ import datetime
 import getpass
 import platform
 import queue
-import random
 import sys
 import time
-import threading
 import traceback
 
 import pyperclip
 
-import addon_utils
 import bpy
-from bpy.app.handlers import persistent
-from bpy.props import BoolProperty, EnumProperty, IntProperty, StringProperty
-from bpy_extras.io_utils import ExportHelper, path_reference_mode
+from bpy.props import IntProperty
 
 
 def id_generator():
