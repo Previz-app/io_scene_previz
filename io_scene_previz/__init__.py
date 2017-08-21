@@ -83,121 +83,6 @@ def log_invoke(func):
     return wrapper
 
 
-class PrevizCancelUploadException(Exception):
-    pass
-
-
-class PublishSceneTask(tasks.Task):
-    def __init__(self, debug_cleanup = True, **kwargs):
-        tasks.Task.__init__(self)
-
-        self.label = 'Publish scene'
-
-        self.export_path = kwargs['export_path']
-        self.debug_cleanup = debug_cleanup
-
-        self.last_progress_notify_date = None
-
-        self.queue_to_worker = queue.Queue()
-        self.queue_to_main = queue.Queue()
-
-        self.thread = threading.Thread(target=PublishSceneTask.thread_run,
-                                       args=(self.queue_to_worker,
-                                             self.queue_to_main),
-                                       kwargs=kwargs)
-
-    def run(self, context):
-        super().run(context)
-
-        self.progress = 0
-        self.label = 'Exporting scene'
-        self.notify()
-
-        with self.export_path.open('w') as fp:
-            previz.export(three_js_exporter.build_scene(context), fp)
-
-        self.label = 'Publishing scene'
-        self.notify()
-
-        self.thread.start()
-
-    def cleanup(self, context):
-        if self.debug_cleanup and self.export_path.exists():
-            self.export_path.unlink()
-
-    def cancel(self):
-        self.canceling()
-        self.queue_to_worker.put((tasks.REQUEST_CANCEL, None))
-
-    @staticmethod
-    def thread_run(queue_to_worker, queue_to_main, api_root, api_token, project_id, scene_id, export_path):
-        def on_progress(fp, read_size, read_so_far, size):
-            while not queue_to_worker.empty():
-                msg, data = queue_to_worker.get()
-                queue_to_worker.task_done()
-
-                if msg == tasks.REQUEST_CANCEL:
-                    raise PrevizCancelUploadException
-
-            data = ('progress', read_so_far / size)
-            msg = (tasks.TASK_UPDATE, data)
-            queue_to_main.put(msg)
-
-        try:
-            p = previz.PrevizProject(api_root, api_token, project_id)
-
-            url = p.scene(scene_id, include=[])['jsonUrl']
-            with export_path.open('rb') as fd:
-                p.update_scene(url, fd, on_progress)
-
-            msg = (tasks.TASK_DONE, None)
-            queue_to_main.put(msg)
-
-        except PrevizCancelUploadException:
-            queue_to_main.put((tasks.RESPOND_CANCELED, None))
-
-        except Exception:
-            msg = (tasks.TASK_ERROR, sys.exc_info())
-            queue_to_main.put(msg)
-
-    def tick(self, context):
-        while not self.queue_to_main.empty():
-            msg, data = self.queue_to_main.get()
-
-            if not self.is_finished:
-                if msg == tasks.RESPOND_CANCELED:
-                    self.finished_time = time.time()
-                    self.state = 'Canceled'
-                    self.status = tasks.CANCELED
-                    self.notify()
-
-                if msg == tasks.TASK_DONE:
-                    self.progress = 1
-                    self.done()
-
-                if msg == tasks.TASK_UPDATE:
-                    request, data = data
-
-                    if request == 'progress':
-                        if self.notify_progress:
-                            self.last_progress_notify_date = time.time()
-                            self.progress = data
-                            self.notify()
-
-                if msg == tasks.TASK_ERROR:
-                    exc_info = data
-                    self.set_error(exc_info)
-
-            self.queue_to_main.task_done()
-
-        if self.is_finished:
-            self.cleanup(context)
-
-    @property
-    def notify_progress(self):
-        return self.last_progress_notify_date is None \
-               or (time.time() - self.last_progress_notify_date) > .25
-
 
 class ExportPreviz(bpy.types.Operator):
     bl_idname = 'export_scene.previz'
@@ -225,7 +110,6 @@ class ExportPreviz(bpy.types.Operator):
         options={'HIDDEN'}
     )
 
-
     @classmethod
     def poll(cls, context):
         return True # Context check in the future
@@ -241,7 +125,7 @@ class ExportPreviz(bpy.types.Operator):
 
         export_path = pathlib.Path(path)
 
-        task = PublishSceneTask(
+        task = tasks.PublishSceneTask(
             api_root = self.api_root,
             api_token = self.api_token,
             project_id = self.project_id,
@@ -307,79 +191,6 @@ class ExportPrevizFile(bpy.types.Operator, ExportHelper):
         return {'FINISHED'}
 
 
-class CreateProjectTask(tasks.Task):
-    def __init__(self, **kwargs):
-        tasks.Task.__init__(self)
-
-        self.label = 'New project'
-
-        self.api_root = kwargs['api_root']
-        self.api_token = kwargs['api_token']
-
-        self.project = None
-
-        self.queue_to_worker = queue.Queue()
-        self.queue_to_main = queue.Queue()
-
-        self.thread = threading.Thread(target=CreateProjectTask.thread_run,
-                                       args=(self.queue_to_worker,
-                                             self.queue_to_main),
-                                       kwargs=kwargs)
-
-    def run(self, context):
-        super().run(context)
-
-        self.progress = 0
-        self.notify()
-
-        self.thread.start()
-
-    @staticmethod
-    def thread_run(queue_to_worker, queue_to_main, api_root, api_token, project_name, team_uuid):
-        try:
-            p = previz.PrevizProject(api_root, api_token)
-
-            data = ('new_project', p.new_project(project_name, team_uuid))
-            msg = (tasks.TASK_UPDATE, data)
-            queue_to_main.put(msg)
-
-            data = ('get_all', p.get_all())
-            msg = (tasks.TASK_UPDATE, data)
-            queue_to_main.put(msg)
-
-            msg = (tasks.TASK_DONE, None)
-            queue_to_main.put(msg)
-        except Exception:
-            msg = (tasks.TASK_ERROR, sys.exc_info())
-            queue_to_main.put(msg)
-
-    def tick(self, context):
-        while not self.queue_to_main.empty():
-            msg, data = self.queue_to_main.get()
-
-            if not self.is_finished:
-                if msg == tasks.TASK_DONE:
-                    self.done()
-
-                if msg == tasks.TASK_UPDATE:
-                    self.notify()
-
-                    request, data = data
-
-                    if request == 'new_project':
-                        self.project = data
-
-                    if request == 'get_all':
-                        active.teams = extract_all(data)
-                        active.set_project(context, self.project)
-
-                if msg == tasks.TASK_ERROR:
-                    exc_info = data
-                    self.set_error(exc_info)
-
-            self.queue_to_main.task_done()
-
-
 class CreateProject(bpy.types.Operator):
     bl_idname = 'export_scene.previz_new_project'
     bl_label = 'New Previz project'
@@ -405,13 +216,18 @@ class CreateProject(bpy.types.Operator):
 
     @log_execute
     def execute(self, context):
+        def on_done(context, data, project):
+            active.teams = extract_all(data)
+            active.set_project(context, project)
+
         team_uuid = active.team(context)['id']
 
-        task = CreateProjectTask(
+        task = tasks.CreateProjectTask(
             api_root = self.api_root,
             api_token = self.api_token,
             project_name = self.project_name,
-            team_uuid = team_uuid
+            team_uuid = team_uuid,
+            on_done = on_done
         )
         tasks.tasks_runner.add_task(context, task)
 
@@ -421,79 +237,6 @@ class CreateProject(bpy.types.Operator):
     def invoke(self, context, event):
         self.api_root, self.api_token = previz_preferences(context)
         return context.window_manager.invoke_props_dialog(self)
-
-
-class CreateSceneTask(tasks.Task):
-    def __init__(self, **kwargs):
-        tasks.Task.__init__(self)
-
-        self.label = 'New scene'
-
-        self.api_root = kwargs['api_root']
-        self.api_token = kwargs['api_token']
-
-        self.scene = None
-
-        self.queue_to_worker = queue.Queue()
-        self.queue_to_main = queue.Queue()
-
-        self.thread = threading.Thread(target=CreateSceneTask.thread_run,
-                                       args=(self.queue_to_worker,
-                                             self.queue_to_main),
-                                       kwargs=kwargs)
-
-    def run(self, context):
-        super().run(context)
-
-        self.progress = 0
-        self.notify()
-
-        self.thread.start()
-
-    @staticmethod
-    def thread_run(queue_to_worker, queue_to_main, api_root, api_token, scene_name, project_id):
-        try:
-            p = previz.PrevizProject(api_root, api_token, project_id)
-
-            data = ('new_scene', p.new_scene(scene_name))
-            msg = (tasks.TASK_UPDATE, data)
-            queue_to_main.put(msg)
-
-            data = ('get_all', p.get_all())
-            msg = (tasks.TASK_UPDATE, data)
-            queue_to_main.put(msg)
-
-            msg = (tasks.TASK_DONE, None)
-            queue_to_main.put(msg)
-        except Exception:
-            msg = (tasks.TASK_ERROR, sys.exc_info())
-            queue_to_main.put(msg)
-
-    def tick(self, context):
-        while not self.queue_to_main.empty():
-            msg, data = self.queue_to_main.get()
-
-            if not self.is_finished:
-                if msg == tasks.TASK_DONE:
-                    self.done()
-
-                if msg == tasks.TASK_UPDATE:
-                    self.notify()
-
-                    request, data = data
-
-                    if request == 'new_scene':
-                        self.scene = data
-
-                    if request == 'get_all':
-                        active.teams = extract_all(data)
-                        active.set_scene(context, self.scene)
-
-                if msg == tasks.TASK_ERROR:
-                    exc_info = data
-                    self.set_error(exc_info)
-
-            self.queue_to_main.task_done()
 
 
 class CreateScene(bpy.types.Operator):
@@ -523,11 +266,16 @@ class CreateScene(bpy.types.Operator):
 
     @log_execute
     def execute(self, context):
-        task = CreateSceneTask(
+        def on_done(context, data, scene):
+            active.teams = extract_all(data)
+            active.set_scene(context, scene)
+
+        task = tasks.CreateSceneTask(
             api_root = self.api_root,
             api_token = self.api_token,
             scene_name = self.scene_name,
-            project_id = active.project(context)['id']
+            project_id = active.project(context)['id'],
+            on_done = on_done
         )
         tasks.tasks_runner.add_task(context, task)
 
@@ -725,9 +473,6 @@ class Active(object):
         return int(prop)
 
 
-active = Active()
-new_plugin_version = None
-
 def extract(data, next_name = None):
     ret = {
         'id': data['id'],
@@ -738,6 +483,7 @@ def extract(data, next_name = None):
 
     ret[next_name] = []
     return ret, ret[next_name]
+
 
 def extract_all(teams_data):
     teams = []
@@ -753,6 +499,10 @@ def extract_all(teams_data):
     return teams
 
 
+active = Active()
+new_plugin_version = None
+
+
 class RefreshProjects(bpy.types.Operator):
     bl_idname = 'export_scene.previz_refresh_projects'
     bl_label = 'Refresh Previz projects'
@@ -764,80 +514,23 @@ class RefreshProjects(bpy.types.Operator):
 
     @log_execute
     def execute(self, context):
+        def on_get_all(context, data):
+            active.teams = extract_all(data)
+
+        def on_updated_plugins(context, data):
+            global new_plugin_version
+            new_plugin_version = data
+
         api_root, api_token = previz_preferences(context)
-        task = RefreshAllTask(api_root, api_token, version_string)
+        task = tasks.RefreshAllTask(
+            api_root,
+            api_token,
+            version_string,
+            on_get_all,
+            on_updated_plugins
+        )
         tasks.tasks_runner.add_task(context, task)
         return {'FINISHED'}
-
-
-class RefreshAllTask(tasks.Task):
-    def __init__(self, api_root, api_token, version_string):
-        tasks.Task.__init__(self)
-
-        self.label = 'Refresh'
-
-        self.queue_to_worker = queue.Queue()
-        self.queue_to_main = queue.Queue()
-        self.thread = threading.Thread(target=RefreshAllTask.thread_run,
-                                       args=(self.queue_to_worker,
-                                             self.queue_to_main,
-                                             api_root,
-                                             api_token,
-                                             version_string))
-
-    def run(self, context):
-        super().run(context)
-
-        self.progress = 0
-        self.notify()
-
-        self.thread.start()
-
-    @staticmethod
-    def thread_run(queue_to_worker, queue_to_main, api_root, api_token, version_string):
-        try:
-            p = previz.PrevizProject(api_root, api_token)
-
-            data = ('get_all', p.get_all())
-            msg = (tasks.TASK_UPDATE, data)
-            queue_to_main.put(msg)
-
-            data = ('updated_plugin', p.updated_plugin('blender', version_string))
-            msg = (tasks.TASK_UPDATE, data)
-            queue_to_main.put(msg)
-
-            msg = (tasks.TASK_DONE, None)
-            queue_to_main.put(msg)
-        except Exception:
-            msg = (tasks.TASK_ERROR, sys.exc_info())
-            queue_to_main.put(msg)
-
-    def tick(self, context):
-        while not self.queue_to_main.empty():
-            msg, data = self.queue_to_main.get()
-
-            if not self.is_finished:
-                if msg == tasks.TASK_DONE:
-                    self.done()
-
-                if msg == tasks.TASK_UPDATE:
-                    self.progress += .5
-                    self.notify()
-
-                    request, data = data
-
-                    if request == 'get_all':
-                        active.teams = extract_all(data)
-
-                    if request == 'updated_plugin':
-                        global new_plugin_version
-                        new_plugin_version = data
-
-                if msg == tasks.TASK_ERROR:
-                    exc_info = data
-                    self.set_error(exc_info)
-
-            self.queue_to_main.task_done()
 
 
 class PrevizPanel(bpy.types.Panel):
