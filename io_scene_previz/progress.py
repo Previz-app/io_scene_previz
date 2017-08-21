@@ -257,15 +257,11 @@ class ManageQueue(bpy.types.Operator):
         self.timer = None
 
     def execute(self, context):
-        #print('ManageQueue.execute')
         if tasks_runner.is_empty:
             self.cleanup(context)
-            #print('ManageQueue.execute FINISHED')
             return {'FINISHED'}
         self.register_timer(context)
         context.window_manager.modal_handler_add(self)
-        #tasks_runner.tick()
-        #print('ManageQueue.execute RUNNING_MODAL')
         return {'RUNNING_MODAL'}
 
     def cancel(self, context):
@@ -273,7 +269,6 @@ class ManageQueue(bpy.types.Operator):
 
     def modal(self, context, event):
         if event.type == 'ESC':
-            #print('ManageQueue.modal CANCELED')
             return {'CANCELED'}
 
         if event.type == 'TIMER':
@@ -284,10 +279,8 @@ class ManageQueue(bpy.types.Operator):
     def handle_timer_event(self, context, event):
         if tasks_runner.is_empty:
             self.cleanup(context)
-            #print('ManageQueue.handle_timer_event FINISHED')
             return {'FINISHED'}
         tasks_runner.tick(context)
-        #print('ManageQueue.handle_timer_event RUNNING_MODAL')
         return {'RUNNING_MODAL'}
 
     def cleanup(self, context):
@@ -296,12 +289,10 @@ class ManageQueue(bpy.types.Operator):
 
     def register_timer(self, context):
         if self.timer is None:
-            #print('ManageQueue.register_timer')
             self.timer = context.window_manager.event_timer_add(self.process_polling_interval, context.window)
 
     def unregister_timer(self, context):
         if self.timer is not None:
-            #print('ManageQueue.unregister_timer')
             context.window_manager.event_timer_remove(self.timer)
             self.timer = None
 
