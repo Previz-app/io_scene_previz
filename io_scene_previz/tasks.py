@@ -374,13 +374,14 @@ class PrevizCancelUploadException(Exception):
 
 
 class PublishSceneTask(Task):
-    def __init__(self, debug_cleanup = True, **kwargs):
+    def __init__(self, on_done = None, **kwargs):
         Task.__init__(self)
+
+        self.on_done = on_done
 
         self.label = 'Publish scene'
 
         self.export_path = kwargs['export_path']
-        self.debug_cleanup = debug_cleanup
 
         self.last_progress_notify_date = None
 
@@ -406,10 +407,6 @@ class PublishSceneTask(Task):
         self.notify()
 
         self.thread.start()
-
-    def cleanup(self, context):
-        if self.debug_cleanup and self.export_path.exists():
-            self.export_path.unlink()
 
     def cancel(self):
         self.canceling()
@@ -458,6 +455,8 @@ class PublishSceneTask(Task):
                     self.notify()
 
                 if msg == TASK_DONE:
+                    if self.on_done is not None:
+                        self.on_done()
                     self.progress = 1
                     self.done()
 
@@ -476,8 +475,6 @@ class PublishSceneTask(Task):
 
             self.queue_to_main.task_done()
 
-        if self.is_finished:
-            self.cleanup(context)
 
     @property
     def notify_progress(self):

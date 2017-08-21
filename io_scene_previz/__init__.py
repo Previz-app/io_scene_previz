@@ -246,6 +246,13 @@ class ExportPreviz(bpy.types.Operator):
                and active_scene_is_valid
 
     def execute(self, context):
+        # Keep a reference to debug_cleanup so the call back
+        # still sees it after the Operator is destroyed
+        debug_cleanup = self.debug_cleanup
+        def on_done(*args, **kwargs):
+            if debug_cleanup and export_path.exists():
+                export_path.unlink()
+
         team_uuid = active.team(context)['id']
 
         fileno, path = tempfile.mkstemp(
@@ -261,7 +268,7 @@ class ExportPreviz(bpy.types.Operator):
             project_id = self.project_id,
             scene_id = self.scene_id,
             export_path = export_path,
-            debug_cleanup = False
+            on_done = on_done
         )
         tasks_runner.add_task(context, task)
 
