@@ -247,7 +247,13 @@ class ApiOperatorMixin:
         set_property_if_invalid(self, 'api_token', prefs_api_token)
 
 
-class PublishScene(bpy.types.Operator, ApiOperatorMixin):
+class ObjectModeMixin:
+    @classmethod
+    def poll(cls, context):
+        return context.mode == 'OBJECT'
+
+
+class PublishScene(bpy.types.Operator, ApiOperatorMixin, ObjectModeMixin):
     bl_idname = 'export_scene.previz_publish_scene'
     bl_label = 'Export scene to Previz'
 
@@ -269,16 +275,6 @@ class PublishScene(bpy.types.Operator, ApiOperatorMixin):
         name='Force export path',
         options={'HIDDEN'}
     )
-
-    @classmethod
-    def poll(cls, context):
-        api_root, api_token = previz_preferences(context)
-        api_root_is_valid = len(api_root) > 0
-        api_token_is_valid = len(api_token) > 0
-        active_scene_is_valid = active.is_valid(context)
-        return api_root_is_valid \
-               and api_token_is_valid \
-               and active_scene_is_valid
 
     def execute(self, context):
         # Keep a reference to debug_cleanup so the call back
@@ -317,7 +313,7 @@ class PublishScene(bpy.types.Operator, ApiOperatorMixin):
         return self.execute(context)
 
 
-class ExportScene(bpy.types.Operator, ExportHelper):
+class ExportScene(bpy.types.Operator, ExportHelper, ObjectModeMixin):
     bl_idname = 'export_scene.previz_export_scene'
     bl_label = 'Export scene to a Previz file'
 
