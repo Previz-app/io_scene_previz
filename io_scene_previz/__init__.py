@@ -102,7 +102,7 @@ class ManageQueue(bpy.types.Operator):
         self.timer = None
 
     def execute(self, context):
-        if tasks.tasks_runner.is_empty:
+        if tasks_runner.is_empty:
             self.cleanup(context)
             return {'FINISHED'}
         self.register_timer(context)
@@ -122,14 +122,14 @@ class ManageQueue(bpy.types.Operator):
         return {'PASS_THROUGH'}
 
     def handle_timer_event(self, context, event):
-        if tasks.tasks_runner.is_empty:
+        if tasks_runner.is_empty:
             self.cleanup(context)
             return {'FINISHED'}
-        tasks.tasks_runner.tick(context)
+        tasks_runner.tick(context)
         return {'RUNNING_MODAL'}
 
     def cleanup(self, context):
-        tasks.tasks_runner.cancel()
+        tasks_runner.cancel()
         self.unregister_timer(context)
 
     def register_timer(self, context):
@@ -152,7 +152,7 @@ class CancelTask(bpy.types.Operator):
     )
 
     def execute(self, context):
-        tasks.tasks_runner.tasks[self.task_id].cancel()
+        tasks_runner.tasks[self.task_id].cancel()
         return {'FINISHED'}
 
 
@@ -166,7 +166,7 @@ class ShowTaskError(bpy.types.Operator):
     )
 
     def execute(self, context):
-        task = tasks.tasks_runner.tasks[self.task_id]
+        task = tasks_runner.tasks[self.task_id]
         self.report({'ERROR'}, task2report(task))
         debug_info = tasks.task2debuginfo(task)
         pyperclip.copy(debug_info)
@@ -184,7 +184,7 @@ class RemoveTask(bpy.types.Operator):
     )
 
     def execute(self, context):
-        tasks.tasks_runner.remove_task(self.task_id)
+        tasks_runner.remove_task(self.task_id)
         return {'FINISHED'}
 
 
@@ -241,7 +241,7 @@ class ExportPreviz(bpy.types.Operator):
             export_path = export_path,
             debug_cleanup = False
         )
-        tasks.tasks_runner.add_task(context, task)
+        tasks_runner.add_task(context, task)
 
         return {'FINISHED'}
 
@@ -337,7 +337,7 @@ class CreateProject(bpy.types.Operator):
             team_uuid = team_uuid,
             on_done = on_done
         )
-        tasks.tasks_runner.add_task(context, task)
+        tasks_runner.add_task(context, task)
 
         return {'FINISHED'}
 
@@ -385,7 +385,7 @@ class CreateScene(bpy.types.Operator):
             project_id = active.project(context)['id'],
             on_done = on_done
         )
-        tasks.tasks_runner.add_task(context, task)
+        tasks_runner.add_task(context, task)
 
         return {'FINISHED'}
 
@@ -637,7 +637,7 @@ class RefreshProjects(bpy.types.Operator):
             on_get_all,
             on_updated_plugins
         )
-        tasks.tasks_runner.add_task(context, task)
+        tasks_runner.add_task(context, task)
         return {'FINISHED'}
 
 
@@ -713,7 +713,7 @@ class Panel(bpy.types.Panel):
     bl_context = "scene"
 
     def draw(self, context):
-        for id, task in tasks.tasks_runner.tasks.items():
+        for id, task in tasks_runner.tasks.items():
             row = self.layout.row()
             label = '{} ({})'.format(task.label, task.state)
             if task.progress is not None:
@@ -742,9 +742,24 @@ class Panel(bpy.types.Panel):
             row.enabled = task.status != tasks.CANCELING
 
 
-################
-# Registration #
-################
+#############################################################################
+# Registration
+#############################################################################
+
+
+def register_tasks_runner():
+    global tasks_runner
+    tasks_runner = tasks.TasksRunner()
+
+    def refresh_panel(*args, **kwarsg):
+        bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
+    tasks_runner.on_task_changed.append(refresh_panel)
+
+
+def unregister_tasks_runner():
+    global tasks_runner
+    tasks_runner.cancel()
+    tasks_runner = None
 
 
 def menu_export(self, context):
@@ -755,8 +770,9 @@ def menu_export(self, context):
 #def menu_image_upload(self, context):
     #self.layout.operator(UploadImage.bl_idname, text="Upload image to Previz")
 
+
 def register():
-    tasks.register()
+    register_tasks_runner()
 
     bpy.utils.register_module(__name__)
 
@@ -770,4 +786,4 @@ def unregister():
 
     bpy.utils.unregister_module(__name__)
 
-    tasks.unregister()
+    unregister_tasks_runner()

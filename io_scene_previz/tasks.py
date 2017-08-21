@@ -530,18 +530,3 @@ class PublishSceneTask(Task):
     def notify_progress(self):
         return self.last_progress_notify_date is None \
                or (time.time() - self.last_progress_notify_date) > .25
-
-
-def register():
-    global tasks_runner
-    tasks_runner = TasksRunner()
-
-    def refresh_panel(*args, **kwarsg):
-        bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
-    tasks_runner.on_task_changed.append(refresh_panel)
-
-
-def unregister():
-    global tasks_runner
-    tasks_runner.cancel()
-    tasks_runner = None
