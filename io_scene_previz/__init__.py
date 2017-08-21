@@ -8,14 +8,22 @@ import tempfile
 import time
 import threading
 
+# Dependencies path, depending if we are in an installed plugin
+# or in development move within a virtual env
+def sitedir():
+    path = pathlib.Path(__file__).parent
+    if 'VIRTUAL_ENV' in os.environ:
+        env = pathlib.Path(os.environ['VIRTUAL_ENV'])
+        v = sys.version_info
+        path = env / 'lib/python{}.{}/site-packages'.format(v.major, v.minor)
+    return str(path.resolve())
+site.addsitedir(sitedir())
+
 import addon_utils
 import bpy
 from bpy.app.handlers import persistent
 from bpy.props import BoolProperty, EnumProperty, IntProperty, StringProperty
 from bpy_extras.io_utils import ExportHelper, path_reference_mode
-
-from . import utils
-site.addsitedir(utils.sitedir())
 
 import previz
 from . import progress
