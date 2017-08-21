@@ -359,6 +359,9 @@ def register():
 
 
 def unregister():
+    global tasks_runner
+    tasks_runner.cancel()
+
     bpy.utils.unregister_class(CancelTask)
     bpy.utils.unregister_class(RemoveTask)
     bpy.utils.unregister_class(Panel)
