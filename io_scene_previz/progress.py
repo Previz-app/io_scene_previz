@@ -143,97 +143,11 @@ class Task(object):
         self.tasks_runner.notify_change(self)
 
 
-class DebugSyncTask(Task):
-    def __init__(self):
-        Task.__init__(self)
-
-    def run(self, context):
-        super().run(context)
-        for ms in range(0, 510, 100):
-            s = ms / 1000
-            time.sleep(s)
-            self.label = 'task {}'.format(s*2)
-            self.progress = s*2
-            self.notify()
-        self.done()
-
-
 REQUEST_CANCEL = 'REQUEST_CANCEL'
 RESPOND_CANCELED = 'RESPOND_CANCELED'
 TASK_DONE = 'TASK_DONE'
 TASK_UPDATE = 'TASK_UPDATE'
 TASK_ERROR = 'TASK_ERROR'
-
-class DebugAsyncTask(Task):
-    def __init__(self):
-        Task.__init__(self)
-
-        self.queue_to_worker = queue.Queue()
-        self.queue_to_main = queue.Queue()
-        self.thread = threading.Thread(target=DebugAsyncTask.thread_run,
-                                       args=(self.queue_to_worker,
-                                             self.queue_to_main))
-
-    def run(self, context):
-        print('MAIN: Starting thread')
-        self.thread.start()
-        print('MAIN: Started thread')
-
-    def cancel(self):
-        self.canceling()
-        self.queue_to_worker.put((REQUEST_CANCEL, None))
-
-    @staticmethod
-    def thread_run(queue_to_worker, queue_to_main):
-        print('THREAD: Starting')
-        try:
-            for i in range(1, 11):
-                while not queue_to_worker.empty():
-                    msg, data = queue_to_worker.get()
-                    if msg == REQUEST_CANCEL:
-                        queue_to_main.put((RESPOND_CANCELED, None))
-                        queue_to_worker.task_done()
-                        return
-
-                s = random.random()/2
-                msg = (i, s)
-                queue_to_main.put((TASK_UPDATE, msg))
-                print('THREAD: Sleep {} {:.2}'.format(*msg))
-                time.sleep(s)
-            queue_to_main.put((TASK_DONE, None))
-        except Exception as err:
-            print('****** CAUGHT')
-            queue_to_main.put((TASK_ERROR, sys.exc_info()))
-        finally:
-            print('THREAD: Stopping')
-
-    def tick(self, context):
-        #print('DebugAsyncTask.tick')
-        while not self.queue_to_main.empty():
-            msg, data = self.queue_to_main.get()
-            print('msg', msg)
-            print('is_finished', self.is_finished)
-
-            if not self.is_finished:
-                if msg == RESPOND_CANCELED:
-                    self.finished_time = time.time()
-                    self.state = 'Canceled'
-                    self.status = CANCELED
-                    self.notify()
-
-                if msg == TASK_DONE:
-                    self.done()
-
-                if msg == TASK_UPDATE:
-                    self.label = 'Sleep: {} {:.2}'.format(*data)
-                    self.notify()
-
-                if msg == TASK_ERROR:
-                    print('Error ---------')
-                    exc_info = data
-                    self.set_error(exc_info)
-
-            self.queue_to_main.task_done()
 
 
 class CancelTask(bpy.types.Operator):
