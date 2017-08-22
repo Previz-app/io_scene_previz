@@ -49,7 +49,7 @@ class TestDecorators(unittest.TestCase):
         self.assertTrue(len(scene['id']) > 0)
 
 
-class TestOperatorManageQueue(unittest.TestCase):
+class TestOperators(unittest.TestCase):
     def test_previz_manage_queue(self):
         self.assertEqual(
             bpy.ops.export_scene.previz_manage_queue(),
@@ -64,7 +64,6 @@ class TestOperatorManageQueue(unittest.TestCase):
         self.assertEqual(task.status, DONE)
 
 
-class TestOperatorCancelTask(unittest.TestCase):
     def test_previz_cancel_task(self):
         task = TestTask(timeout=10)
         task_id = io_scene_previz.tasks_runner.add_task(bpy.context, task)
@@ -79,7 +78,6 @@ class TestOperatorCancelTask(unittest.TestCase):
         self.assertEqual(task.status, CANCELED)
 
 
-class TestOperatorRemoveTask(unittest.TestCase):
     def test_previz_remove_task(self):
         task = TestTask(timeout=.1)
         task_id = io_scene_previz.tasks_runner.add_task(bpy.context, task)
@@ -103,7 +101,6 @@ class TestOperatorRemoveTask(unittest.TestCase):
         self.assertTrue(io_scene_previz.tasks_runner.is_empty)
 
 
-class TestOperatorShowTaskError(unittest.TestCase):
     def test_previz_show_task_error(self):
         task = TestTask(raise_timeout=.1)
         task_id = io_scene_previz.tasks_runner.add_task(bpy.context, task)
@@ -119,7 +116,6 @@ class TestOperatorShowTaskError(unittest.TestCase):
         )
 
 
-class TestOperatorRefreshProject(unittest.TestCase):
     @apidecs.tempproject
     @apidecs.tempscene
     @apidecs.credentials
@@ -141,7 +137,6 @@ class TestOperatorRefreshProject(unittest.TestCase):
         )
 
 
-class TestOperatorCreateProject(unittest.TestCase):
     @apidecs.credentials
     @apidecs.get_team_id
     def test_previz_new_project(self, api_root,  api_token, team_id):
@@ -161,7 +156,6 @@ class TestOperatorCreateProject(unittest.TestCase):
         PrevizProject(api_root, api_token, project['id']).delete_project()
 
 
-class TestOperatorCreateScene(unittest.TestCase):
     @apidecs.tempproject
     @apidecs.credentials
     def test_previz_new_scene(self, api_root, api_token, project):
@@ -181,7 +175,6 @@ class TestOperatorCreateScene(unittest.TestCase):
         PrevizProject(api_root, api_token, project['id']).delete_scene(scene['id'])
 
 
-class TestOperatorPublishScene(unittest.TestCase):
     # XXX Doesn't actually test much here as the API wrapper does not allow
     # to retrieve a scene file yet
     @apidecs.credentials
@@ -206,7 +199,6 @@ class TestOperatorPublishScene(unittest.TestCase):
         wait_for_queue_to_finish()
 
 
-class TestOperatorExportScene(unittest.TestCase):
     @scene('test_exporter.blend')
     @mkdtemp
     def test_previz_export_scene(self, tmpdir, scenepath):
