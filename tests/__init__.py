@@ -13,6 +13,8 @@ from io_scene_previz.three_js_exporter import *
 
 from .utils import *
 
+bpy.ops.wm.addon_enable(module=io_scene_previz.__name__)
+
 EXPORT_DIRNAME = 'export_tmpdir'
 
 mkdtemp = MakeTempDirectories(io_scene_previz.__name__+'-unittests')
