@@ -437,10 +437,7 @@ class PublishSceneTask(Task):
 
             if not self.is_finished:
                 if msg == RESPOND_CANCELED:
-                    self.finished_time = time.time()
-                    self.state = 'Canceled'
-                    self.status = CANCELED
-                    self.notify()
+                    self.canceled()
 
                 if msg == TASK_DONE:
                     if self.on_done is not None:
