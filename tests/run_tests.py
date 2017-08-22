@@ -47,7 +47,7 @@ def is_environment_valid():
 def main():
     cov = coverage.coverage()
     cov.start()
-    nose.run(argv=[__file__])
+    nose.run(argv=[__file__, '--verbosity=2'])
     cov.stop()
     cov.save()
 

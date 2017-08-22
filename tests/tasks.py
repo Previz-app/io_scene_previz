@@ -22,6 +22,10 @@ class TestTask(Task):
 
         self.thread.start()
 
+    def cancel(self):
+        self.canceling()
+        self.queue_to_worker.put((REQUEST_CANCEL, None))
+
     @staticmethod
     def thread_run(queue_to_worker, queue_to_main, timeout):
         try:
@@ -35,6 +39,9 @@ class TestTask(Task):
                         raise PrevizCancelUploadException
 
                 time.sleep(random.random()*.1)
+
+            msg = (TASK_DONE, None)
+            queue_to_main.put(msg)
 
         except PrevizCancelUploadException:
             queue_to_main.put((RESPOND_CANCELED, None))

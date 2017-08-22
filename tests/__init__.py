@@ -8,9 +8,11 @@ import mathutils
 
 import io_scene_previz
 from io_scene_previz import *
+from io_scene_previz.tasks import *
 from io_scene_previz.utils import *
 from io_scene_previz.three_js_exporter import *
 
+from .tasks import *
 from .utils import *
 
 bpy.ops.wm.addon_enable(module=io_scene_previz.__name__)
@@ -20,6 +22,11 @@ EXPORT_DIRNAME = 'export_tmpdir'
 mkdtemp = MakeTempDirectories(io_scene_previz.__name__+'-unittests')
 
 apidecs = build_api_decorators()
+
+
+def wait_for_queue_to_finish(sleep_time=.1):
+    while bpy.ops.export_scene.previz_manage_queue() == {'CANCELLED'}:
+            time.sleep(sleep_time)
 
 
 class TestUnittestFramework(unittest.TestCase):
@@ -47,6 +54,28 @@ class TestOperatorManageQueue(unittest.TestCase):
             bpy.ops.export_scene.previz_manage_queue(),
             {'FINISHED'}
         )
+
+        task = TestTask(timeout=.5)
+        task_id = io_scene_previz.tasks_runner.add_task(bpy.context, task)
+
+        wait_for_queue_to_finish()
+
+        self.assertEqual(task.status, DONE)
+
+
+class TestOperatorCancelTask(unittest.TestCase):
+    def test_previz_manage_queue(self):
+        task = TestTask(timeout=10)
+        task_id = io_scene_previz.tasks_runner.add_task(bpy.context, task)
+
+        self.assertEqual(
+            bpy.ops.export_scene.previz_cancel_task(task_id=task_id),
+            {'FINISHED'}
+        )
+
+        wait_for_queue_to_finish()
+
+        self.assertEqual(task.status, CANCELED)
 
 
 class TestOperatorExportScene(unittest.TestCase):
