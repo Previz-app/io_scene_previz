@@ -19,6 +19,7 @@ mkdtemp = MakeTempDirectories(io_scene_previz.__name__+'-unittests')
 
 apidecs = build_api_decorators()
 
+
 class TestUnittestFramework(unittest.TestCase):
     @scene('test_unittest_framework_1.blend')
     def test_unittest_framework_1(self, scenepath):
@@ -29,91 +30,13 @@ class TestUnittestFramework(unittest.TestCase):
         self.assertListEqual(object_names(), ['Camera', 'Lamp', 'Suzanne2'])
 
 
-class TestTasksRunner(unittest.TestCase):
-    @mkdtemp
-    def test_run(self, tmpdir):
-        def dircontent(path):
-            return sorted([x.name for x in path.iterdir()])
-
-        def touch(name, duration):
-            time.sleep(duration)
-            with (tmpdir/name).open('w') as f:
-                f.write(name)
-
-        duration = .1
-
-        tasks = queue.Queue()
-
-        tasks.put({'func': touch,
-                   'args': ('00_mp1', duration)})
-
-        tasks.put({'func': touch,
-                   'args': ('01_sp1', duration),
-                   'run_in_subprocess': True})
-
-        tasks.put({'func': touch,
-                   'args': ('02_mp2', duration)})
-
-        tasks.put({'func': touch,
-                   'args': ('03_sp2', duration),
-                   'run_in_subprocess': True})
-
-        tasks.put({'func': touch,
-                   'args': ('04_sp3', duration),
-                   'run_in_subprocess': True})
-
-        tasks.put({'func': touch,
-                   'args': ('05_mp3', duration)})
-
-        tasks.put({'func': touch,
-                   'args': ('06_sp4', .2),
-                   'run_in_subprocess': True})
-
-        with TaskRunner() as runner:
-            while not tasks.empty():
-                try:
-                    task = tasks.get()
-                    runner.run(**task)
-                except queue.Empty:
-                    break
-
-                while runner.is_working:
-                    time.sleep(duration)
-
-                while not runner.has_result:
-                    time.sleep(.01)
-
-                runner.pop_result()
-
-        self.assertListEqual(['00_mp1', '01_sp1', '02_mp2', '03_sp2', '04_sp3', '05_mp3', '06_sp4'],
-                             dircontent(tmpdir))
-
-    def test_raise(self):
-        def raises():
-            1/0
-
-        with TaskRunner() as t:
-            t.run(func=raises, run_in_subprocess=False)
-            with self.assertRaises(ZeroDivisionError):
-                t.pop_result()
-
-            t.run(func=raises, run_in_subprocess=True)
-            with self.assertRaises(ZeroDivisionError):
-                t.pop_result()
-
-
 class TestDecorators(unittest.TestCase):
-    @apidecs.project('8d9e684f-0763-4756-844b-d0219a4f3f9a')
-    @apidecs.scene('5a56a895-46ef-4f0f-862c-38ce14f6275b')
-    def test_get(self, project, scene):
-        self.assertEqual(project['id'], '8d9e684f-0763-4756-844b-d0219a4f3f9a')
-        self.assertEqual(scene['id'], '5a56a895-46ef-4f0f-862c-38ce14f6275b')
-
-    @apidecs.tempproject()
-    @apidecs.tempscene()
+    @apidecs.tempproject
+    @apidecs.tempscene
     def test_temp(self, project, scene):
-        self.assertEqual(project['id'], '8d9e684f-0763-4756-844b-d0219a4f3f9a')
-        self.assertEqual(scene['id'], '5a56a895-46ef-4f0f-862c-38ce14f6275b')
+        print(project['id'], scene['id'])
+        self.assertTrue(len(project['id']) > 0)
+        self.assertTrue(len(scene['id']) > 0)
 
 
 class TestPluginLoadsCorrectly(unittest.TestCase):
@@ -122,25 +45,10 @@ class TestPluginLoadsCorrectly(unittest.TestCase):
     def test_run_export(self, tmpdir, scenepath):
         filepath = tmpdir/'export.json'
         self.assertEqual(
-            bpy.ops.export_scene.previz_file(filepath=str(filepath)),
+            bpy.ops.export_scene.previz_export_scene(filepath=str(filepath)),
             {'FINISHED'}
         )
         self.assertTrue(filepath.exists())
-
-@unittest.skip("Not implemented in API v2 yet")
-class TestApi(unittest.TestCase):
-    @scene('test_assets.blend')
-    @mkdtemp
-    @apidecs.tempproject()
-    @apidecs.tempscene()
-    def test_run_export(self, tmpdir, scenepath):
-        project_id = run_create_project(random_project_name())
-
-        export_dir = tmpdir / EXPORT_DIRNAME
-        self.assertIn(run_previz_exporter(export_dir,
-                                          debug_run_api_requests=True,
-                                          project_id=project_id), [{'FINISHED'}, {'RUNNING_MODAL'}])
-        delete_project(project_id)
 
 
 class TestThreeJSExporter(unittest.TestCase):
@@ -194,15 +102,3 @@ class TestHorizonColor(unittest.TestCase):
     def test_horizon_color(self):
         self.assertEqual(horizon_color(self.context_no_world), None)
         self.assertEqual(horizon_color(self.context_with_world), 2173744)
-
-
-class TestUtils(unittest.TestCase):
-    def test_has_menu_item(self):
-        items = [
-            ('6ea73cf6-6421-4ebb-aa60-c047fc28b179', 'MeanGirls_2017', 'MeanGirls_2017', 0),
-            ('b642ff62-0751-4453-bfed-557e8ae45b8a', 'e3_x_17', 'e3_x_17', 1),
-            ('8f1b0743-0694-467b-ac33-17f220971329', 'att_salwa', 'att_salwa', 2),
-            ('b3f1f426-bf01-4b07-92db-4b88f305f8e9', 'ffl_2017', 'ffl_2017', 3)
-        ]
-        self.assertTrue(has_menu_item(items, ('b642ff62-0751-4453-bfed-557e8ae45b8a', 'e3_x_17', 'e3_x_17', 1)))
-        self.assertFalse(has_menu_item(items, ('cd384942-6d5e-11e7-a63e-f3fb1683649e', 'other_project', 'other_project', 1)))
