@@ -8,15 +8,14 @@ def spec2path(spec):
 
 class bdist_blender_addon(Command):
     description = "Build Blender addon"
-    user_options = [('include-modules=', None, 'Comma-separated list of modules to include with the addon')]
+    user_options = []
     sub_commands = (('build', lambda self: True),)
 
     def initialize_options(self):
-        self.include_modules = []
+        pass
 
     def finalize_options(self):
-        if type(self.include_modules) is str and len(self.include_modules) > 0:
-            self.include_modules = self.include_modules.split(',')
+        pass
 
     def run(self):
         for cmd_name in self.get_sub_commands():
@@ -29,7 +28,7 @@ class bdist_blender_addon(Command):
         build_lib = Path(self.get_finalized_command('build').build_lib)
         build_addon = build_lib / addon_name
 
-        for name in self.include_modules:
+        for name in self.distribution.install_requires:
             p = spec2path(find_spec(name))
             copy_tree(str(p), str(build_addon/name))
 

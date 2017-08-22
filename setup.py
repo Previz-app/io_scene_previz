@@ -25,7 +25,7 @@ setup(
 
     keywords='previz 3d scene exporter',
     packages=find_packages(exclude=['tools.distutils.command', 'tests']),
-    install_requires=['previz'],
+    install_requires=['previz', 'pyperclip', 'requests_toolbelt', 'semantic_version'],
     extras_require={},
     package_data={},
     data_files=[],
