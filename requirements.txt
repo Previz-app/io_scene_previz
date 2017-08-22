@@ -1,5 +1,6 @@
 bumpversion
 coverage
+nose
 previz
 pyperclip
 tox
