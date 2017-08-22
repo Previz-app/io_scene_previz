@@ -136,10 +136,6 @@ def scene(name):
             bpy.ops.wm.open_mainfile(filepath=str(scenepath),
                                      load_ui=False)  # load_ui=True crashes blender in --background mode
 
-            # Enable addons
-
-            bpy.ops.wm.addon_enable(module=io_scene_previz.__name__)
-
             # Set API token
             prefs = bpy.context.user_preferences.addons[io_scene_previz.__name__].preferences
             prefs.api_root = os.environ[PREVIZ_API_ROOT_ENVVAR]
