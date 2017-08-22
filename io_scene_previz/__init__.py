@@ -582,7 +582,8 @@ def register_tasks_runner():
 
     def refresh_panel(*args, **kwarsg):
         bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
-    tasks_runner.on_task_changed.append(refresh_panel)
+    if not bpy.app.background:
+        tasks_runner.on_task_changed.append(refresh_panel)
 
     def manage_queue(*args, **kwargs):
         bpy.ops.export_scene.previz_manage_queue()
