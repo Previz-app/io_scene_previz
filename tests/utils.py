@@ -55,6 +55,12 @@ class ApiDecorators(object):
         finally:
             pp.delete_scene(s['id'])
 
+    def credentials(self, func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            func(api_root=self.api_root, api_token=self.api_token, *args, **kwargs)
+        return wrapper
+
     def project(self, project_id):
         def decorator(func):
             @wraps(func)

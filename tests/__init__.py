@@ -118,6 +118,28 @@ class TestOperatorShowTaskError(unittest.TestCase):
         )
 
 
+class TestOperatorRefreshProject(unittest.TestCase):
+    @apidecs.tempproject
+    @apidecs.tempscene
+    @apidecs.credentials
+    def test_previz_refresh(self, api_root, api_token, project, scene):
+        bpy.ops.export_scene.previz_refresh(
+            api_root=api_root,
+            api_token=api_token
+        )
+
+        wait_for_queue_to_finish()
+
+        self.assertEqual(
+            io_scene_previz.active.project(bpy.context)['id'],
+            project['id']
+        )
+        self.assertEqual(
+            io_scene_previz.active.scene(bpy.context)['id'],
+            scene['id']
+        )
+
+
 class TestOperatorExportScene(unittest.TestCase):
     @scene('test_exporter.blend')
     @mkdtemp
