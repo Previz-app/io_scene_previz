@@ -181,6 +181,31 @@ class TestOperatorCreateScene(unittest.TestCase):
         PrevizProject(api_root, api_token, project['id']).delete_scene(scene['id'])
 
 
+class TestOperatorPublishScene(unittest.TestCase):
+    # XXX Doesn't actually test much here as the API wrapper does not allow
+    # to retrieve a scene file yet
+    @apidecs.credentials
+    @apidecs.tempproject
+    @apidecs.tempscene
+    @scene('test_exporter.blend')
+    @mkdtemp
+    def test_previz_publish_scene(self, api_root, api_token, project, scene, scenepath, tmpdir):
+        debug_export_path = tmpdir/'export.json'
+        self.assertEqual(
+            bpy.ops.export_scene.previz_publish_scene(
+                api_root=api_root,
+                api_token=api_token,
+                project_id=project['id'],
+                scene_id=scene['id'],
+                debug_cleanup=False,
+                debug_export_path=str(debug_export_path)
+            ),
+            {'FINISHED'}
+        )
+
+        wait_for_queue_to_finish()
+
+
 class TestOperatorExportScene(unittest.TestCase):
     @scene('test_exporter.blend')
     @mkdtemp
