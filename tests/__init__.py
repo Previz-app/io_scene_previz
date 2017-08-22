@@ -39,7 +39,7 @@ class TestDecorators(unittest.TestCase):
         self.assertTrue(len(scene['id']) > 0)
 
 
-class TestPluginLoadsCorrectly(unittest.TestCase):
+class TestOperatorExportScene(unittest.TestCase):
     @scene('test_exporter.blend')
     @mkdtemp
     def test_run_export(self, tmpdir, scenepath):
