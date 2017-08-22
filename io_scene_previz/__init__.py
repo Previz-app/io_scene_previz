@@ -78,6 +78,11 @@ class ManageQueue(bpy.types.Operator):
         if tasks_runner.is_empty:
             self.cleanup(context)
             return {'FINISHED'}
+
+        if bpy.app.background:
+            tasks_runner.tick(context)
+            return {'CANCELLED'}
+
         self.register_timer(context)
         context.window_manager.modal_handler_add(self)
         return {'RUNNING_MODAL'}
