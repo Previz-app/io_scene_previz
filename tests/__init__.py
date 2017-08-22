@@ -102,6 +102,22 @@ class TestOperatorRemoveTask(unittest.TestCase):
         self.assertTrue(io_scene_previz.tasks_runner.is_empty)
 
 
+class TestOperatorShowTaskError(unittest.TestCase):
+    def test_previz_show_task_error(self):
+        task = TestTask(raise_timeout=.1)
+        task_id = io_scene_previz.tasks_runner.add_task(bpy.context, task)
+
+        time.sleep(.2)
+        io_scene_previz.tasks_runner.tick(bpy.context)
+        self.assertEqual(task.status, ERROR)
+
+        self.assertRaises(
+            RuntimeError,
+            bpy.ops.export_scene.previz_show_task_error,
+            task_id=task_id
+        )
+
+
 class TestOperatorExportScene(unittest.TestCase):
     @scene('test_exporter.blend')
     @mkdtemp

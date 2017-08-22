@@ -1,4 +1,5 @@
 import random
+import sys
 import time
 
 from io_scene_previz.tasks import *
@@ -27,10 +28,10 @@ class TestTask(Task):
         self.queue_to_worker.put((REQUEST_CANCEL, None))
 
     @staticmethod
-    def thread_run(queue_to_worker, queue_to_main, timeout):
+    def thread_run(queue_to_worker, queue_to_main, timeout=sys.float_info.max, raise_timeout=sys.float_info.max):
         try:
             t0 = time.time()
-            while (time.time() - t0) < timeout:
+            while True:
                 while not queue_to_worker.empty():
                     msg, data = queue_to_worker.get()
                     queue_to_worker.task_done()
@@ -38,10 +39,17 @@ class TestTask(Task):
                     if msg == REQUEST_CANCEL:
                         raise PrevizCancelUploadException
 
-                time.sleep(random.random()*.1)
+                dt = time.time() - t0
 
-            msg = (TASK_DONE, None)
-            queue_to_main.put(msg)
+                if dt >= raise_timeout:
+                    raise RuntimeError('Raise timeout reached')
+
+                if dt >= timeout:
+                    msg = (TASK_DONE, None)
+                    queue_to_main.put(msg)
+                    return
+
+                time.sleep(random.random()*.1)
 
         except PrevizCancelUploadException:
             queue_to_main.put((RESPOND_CANCELED, None))
