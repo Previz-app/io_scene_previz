@@ -39,10 +39,18 @@ class TestDecorators(unittest.TestCase):
         self.assertTrue(len(scene['id']) > 0)
 
 
+class TestOperatorManageQueue(unittest.TestCase):
+    def test_previz_manage_queue(self):
+        self.assertEqual(
+            bpy.ops.export_scene.previz_manage_queue(),
+            {'FINISHED'}
+        )
+
+
 class TestOperatorExportScene(unittest.TestCase):
     @scene('test_exporter.blend')
     @mkdtemp
-    def test_run_export(self, tmpdir, scenepath):
+    def test_previz_export_scene(self, tmpdir, scenepath):
         filepath = tmpdir/'export.json'
         self.assertEqual(
             bpy.ops.export_scene.previz_export_scene(filepath=str(filepath)),
