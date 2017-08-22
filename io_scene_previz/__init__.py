@@ -67,7 +67,7 @@ class ManageQueue(bpy.types.Operator):
     bl_idname = 'export_scene.previz_manage_queue'
     bl_label = 'Manage Previz task queue'
 
-    process_polling_interval = 1 # Needs to be a debug User Preferences flag
+    process_polling_interval = .25 # Needs to be a debug User Preferences flag
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
