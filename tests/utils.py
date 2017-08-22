@@ -61,6 +61,12 @@ class ApiDecorators(object):
             func(api_root=self.api_root, api_token=self.api_token, *args, **kwargs)
         return wrapper
 
+    def get_team_id(self, func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            func(team_id=self.team_id, *args, **kwargs)
+        return wrapper
+
     def project(self, project_id):
         def decorator(func):
             @wraps(func)

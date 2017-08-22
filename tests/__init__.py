@@ -1,3 +1,4 @@
+import datetime
 import itertools
 import time
 import unittest
@@ -138,6 +139,26 @@ class TestOperatorRefreshProject(unittest.TestCase):
             io_scene_previz.active.scene(bpy.context)['id'],
             scene['id']
         )
+
+
+class TestOperatorCreateProject(unittest.TestCase):
+    @apidecs.credentials
+    @apidecs.get_team_id
+    def test_previz_new_project(self, api_root,  api_token, team_id):
+        project_name = datetime.datetime.now().isoformat()
+        bpy.ops.export_scene.previz_new_project(
+            api_root=api_root,
+            api_token=api_token,
+            project_name=project_name,
+            team_id=team_id
+        )
+
+        wait_for_queue_to_finish()
+
+        project = io_scene_previz.active.project(bpy.context)
+        self.assertEqual(project['title'], project_name)
+
+        PrevizProject(api_root, api_token, project['id']).delete_project()
 
 
 class TestOperatorExportScene(unittest.TestCase):
