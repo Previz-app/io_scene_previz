@@ -398,7 +398,7 @@ class CreateProject(bpy.types.Operator, ApiOperatorMixin):
 
     def invoke(self, context, event):
         ApiOperatorMixin.invoke(self, context, event)
-        set_property_if_invalid(self, 'team_id', active.team(context)['id'])
+        set_property_if_invalid(self, 'team_id', lambda: active.team(context)['id'])
         return context.window_manager.invoke_props_dialog(self)
 
 
@@ -424,7 +424,7 @@ class CreateScene(bpy.types.Operator, ApiOperatorMixin):
             api_root = self.api_root,
             api_token = self.api_token,
             scene_name = self.scene_name,
-            project_id = active.project(context)['id'],
+            project_id = self.project_id,
             on_done = on_done
         )
         tasks_runner.add_task(context, task)
@@ -433,7 +433,7 @@ class CreateScene(bpy.types.Operator, ApiOperatorMixin):
 
     def invoke(self, context, event):
         ApiOperatorMixin.invoke(self, context, event)
-        set_property_if_invalid(self, 'project_id', active.project(context)['id'])
+        set_property_if_invalid(self, 'project_id', lambda: active.project(context)['id'])
         return context.window_manager.invoke_props_dialog(self)
 
 

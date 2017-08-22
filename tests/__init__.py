@@ -161,6 +161,26 @@ class TestOperatorCreateProject(unittest.TestCase):
         PrevizProject(api_root, api_token, project['id']).delete_project()
 
 
+class TestOperatorCreateScene(unittest.TestCase):
+    @apidecs.tempproject
+    @apidecs.credentials
+    def test_previz_new_scene(self, api_root, api_token, project):
+        scene_name = datetime.datetime.now().isoformat()
+        bpy.ops.export_scene.previz_new_scene(
+            api_root=api_root,
+            api_token=api_token,
+            scene_name=scene_name,
+            project_id=project['id']
+        )
+
+        wait_for_queue_to_finish()
+
+        scene = io_scene_previz.active.scene(bpy.context)
+        self.assertEqual(scene['title'], scene_name)
+
+        PrevizProject(api_root, api_token, project['id']).delete_scene(scene['id'])
+
+
 class TestOperatorExportScene(unittest.TestCase):
     @scene('test_exporter.blend')
     @mkdtemp
