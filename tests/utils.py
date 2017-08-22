@@ -1,3 +1,4 @@
+from contextlib import contextmanager
 from functools import wraps
 import json
 import os
@@ -9,16 +10,88 @@ import tempfile
 
 import bpy
 
-import previz.testsutils
-
 import io_scene_previz
-from io_scene_previz.utils import PrevizProject
-
 
 BLENDS_DIR_NAME = 'blends'
 
 PREVIZ_API_ROOT_ENVVAR = 'PREVIZ_API_ROOT'
 PREVIZ_API_TOKEN_ENVVAR = 'PREVIZ_API_TOKEN'
+PREVIZ_TEAM_UUID_ENVVAR= 'PREVIZ_TEAM_UUID'
+
+from previz import PrevizProject
+
+
+
+class ApiDecorators(object):
+    def __init__(
+        self,
+        api_token,
+        api_root,
+        team_id,
+        new_project_prefix = 'ut-',
+        new_scene_prefix='ut-'):
+        self.api_root = api_root
+        self.api_token = api_token
+        self.team_id = team_id
+        self.new_project_prefix = new_project_prefix
+        self.new_scene_prefix = new_scene_prefix
+
+    @contextmanager
+    def project_context(self, title):
+        pp = PrevizProject(self.api_root, self.api_token)
+        p = pp.new_project(self.new_project_prefix+title, self.team_id)
+        try:
+            yield p
+        finally:
+            pp.project_id = p['id']
+            pp.delete_project()
+
+    @contextmanager
+    def scene_context(self, project_id, title):
+        pp = PrevizProject(self.api_root, self.api_token, project_id)
+        s = pp.new_scene(self.new_scene_prefix+title)
+        try:
+            yield s
+        finally:
+            pp.delete_scene(s['id'])
+
+    def project(self, project_id):
+        def decorator(func):
+            @wraps(func)
+            def wrapper(*args, **kwargs):
+                p = PrevizProject(self.api_root, self.api_token, project_id)
+                project = p.project(include=['scenes'])
+                func(project=project, *args, **kwargs)
+            return wrapper
+        return decorator
+
+    def tempproject(self, func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            with self.project_context(func.__qualname__) as project:
+                func(project=project, *args, **kwargs)
+        return wrapper
+
+    def scene(self, scene_id):
+        def decorator(func):
+            @wraps(func)
+            def wrapper(*args, **kwargs):
+                project_id = kwargs['project']['id']
+                p = PrevizProject(self.api_root, self.api_token, project_id)
+                scene = p.scene(scene_id, include=[])
+                func(scene=scene, *args, **kwargs)
+                #p = PrevizProject(self.api_root, self.api_token, project_id)
+                #func(project=p.project(include=['scenes']), *args, **kwargs)
+            return wrapper
+        return decorator
+
+    def tempscene(self, func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            project_id = kwargs['project']['id']
+            with self.scene_context(project_id, func.__qualname__) as scene:
+                func(scene=scene, *args, **kwargs)
+        return wrapper
 
 
 class MakeTempDirectories(object):
@@ -47,8 +120,9 @@ class MakeTempDirectories(object):
 
 
 def build_api_decorators():
-    return previz.testsutils.Decorators(os.environ[PREVIZ_API_TOKEN_ENVVAR],
-                                        os.environ[PREVIZ_API_ROOT_ENVVAR])
+    return ApiDecorators(os.environ[PREVIZ_API_TOKEN_ENVVAR],
+                         os.environ[PREVIZ_API_ROOT_ENVVAR],
+                         os.environ[PREVIZ_TEAM_UUID_ENVVAR])
 
 
 def scene(name):
