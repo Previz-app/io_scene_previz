@@ -64,7 +64,7 @@ class TestOperatorManageQueue(unittest.TestCase):
 
 
 class TestOperatorCancelTask(unittest.TestCase):
-    def test_previz_manage_queue(self):
+    def test_previz_cancel_task(self):
         task = TestTask(timeout=10)
         task_id = io_scene_previz.tasks_runner.add_task(bpy.context, task)
 
@@ -76,6 +76,30 @@ class TestOperatorCancelTask(unittest.TestCase):
         wait_for_queue_to_finish()
 
         self.assertEqual(task.status, CANCELED)
+
+
+class TestOperatorRemoveTask(unittest.TestCase):
+    def test_previz_remove_task(self):
+        task = TestTask(timeout=.1)
+        task_id = io_scene_previz.tasks_runner.add_task(bpy.context, task)
+
+        # XXX How to catch an Exception in an Operator ?
+        #self.assertRaises(
+            #RuntimeError,
+            #bpy.ops.export_scene.previz_remove_task,
+            #task_id=task_id
+        #)
+
+        time.sleep(.2)
+        io_scene_previz.tasks_runner.tick(bpy.context)
+        self.assertTrue(task.is_finished)
+
+        self.assertEqual(
+            bpy.ops.export_scene.previz_remove_task(task_id=task_id),
+            {'FINISHED'}
+        )
+
+        self.assertTrue(io_scene_previz.tasks_runner.is_empty)
 
 
 class TestOperatorExportScene(unittest.TestCase):
