@@ -16,7 +16,7 @@ setup(
     license='MIT',
 
     classifiers=[
-        'Development Status :: 4 - Beta',
+        'Development Status :: 5 - Production/Stable',
         'Intended Audience :: End Users/Desktop',
         'Topic :: Multimedia :: Graphics :: 3D Modeling',
         'License :: OSI Approved :: MIT License',
