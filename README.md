@@ -5,12 +5,31 @@ Previz Blender integration
 Development
 -----------
 
-* Create and activate a virtual environment:
+* Create a virtual environment:
+
+** Linux
+
+On Linux, Blender is compiled against the system python:
+
 ``` sh
-$ pyvenv-3.5 env
+$ python3.5 -m venv env
+```
+
+** macOS
+
+On macOS, Blender ships its own python interpreter:
+
+``` sh
+$ /Applications/blender-*/blender.app/Contents/Resources/*/python/bin/python3.5m -m venv env
+```
+
+* Activate the python environment
+
+`` sh
 $ source env/bin/activate
 (env) $
 ```
+
 * To use a locally cloned `previz-python-api` repository, `pip install` it as a linked / editable dependencies before installing the other dependencies:
 ```
 (env) $ pip install -e /path/to/previz-python-wrapper
