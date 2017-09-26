@@ -60,6 +60,12 @@ class TasksRunner(object):
     def is_empty(self):
         return len(self.tasks) == 0
 
+    @property
+    def is_finished(self):
+        tasks = self.tasks.values()
+        finished_tasks = [task for task in tasks if task.is_finished]
+        return len(finished_tasks) == len(tasks)
+
     def remove_task(self, task_id):
         task = self.tasks[task_id]
         if not task.is_finished:
