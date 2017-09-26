@@ -286,7 +286,11 @@ class PublishScene(bpy.types.Operator, ApiOperatorMixin, ObjectModeMixin):
         debug_cleanup = self.debug_cleanup
         def on_done(*args, **kwargs):
             if debug_cleanup and export_path.exists():
-                export_path.unlink()
+                try:
+                    export_path.unlink()
+                except PermissionError:
+                    mask = 'Not removing scene used by another process: {}'
+                    print(mask.format(export_path))
 
         export_path = pathlib.Path(self.debug_export_path)
 
