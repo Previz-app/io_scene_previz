@@ -457,7 +457,7 @@ class PrevizPreferences(bpy.types.AddonPreferences):
         layout = self.layout
 
         layout.prop(self, 'api_root')
-        
+
         row = layout.split(percentage=.9, align=False)
         row.prop(self, 'api_token')
 
@@ -509,6 +509,7 @@ class PrevizPanel(bpy.types.Panel):
             self.layout.operator('screen.userpref_show')
             return
 
+        is_working = not tasks_runner.is_finished
         if active.is_refreshed:
             is_team_valid = active.team(context) is not None
             is_project_valid = active.project(context) is not None
@@ -520,12 +521,12 @@ class PrevizPanel(bpy.types.Panel):
             row = self.layout.row()
             row.prop(context.scene, 'previz_active_project_id')
             row.operator('export_scene.previz_new_project', text='', icon='NEW')
-            row.enabled = is_team_valid
+            row.enabled = not is_working and is_team_valid
 
             row = self.layout.row()
             row.prop(context.scene, 'previz_active_scene_id')
             row.operator('export_scene.previz_new_scene', text='', icon='NEW')
-            row.enabled = is_project_valid
+            row.enabled = not is_working and is_project_valid
 
             row = self.layout.row()
             row.operator(
@@ -533,13 +534,15 @@ class PrevizPanel(bpy.types.Panel):
                 text='Publish scene',
                 icon='EXPORT'
             )
-            row.enabled = is_scene_valid
+            row.enabled = not is_working and is_scene_valid
 
-        self.layout.operator(
+        row = self.layout.row()
+        row.operator(
             'export_scene.previz_refresh',
             text='Refresh',
             icon='FILE_REFRESH'
         )
+        row.enabled = not is_working
 
         if new_plugin_version:
             text = 'New addon: v' + new_plugin_version['version']
