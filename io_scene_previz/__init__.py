@@ -212,19 +212,6 @@ Please paste it to Previz support.
 # PREVIZ OPERATORS
 #############################################################################
 
-default_predicates = {
-    str: lambda x: len(x) > 0
-}
-
-def set_property_if_invalid(operator, property_name, value, predicate = None):
-    current_value = getattr(operator, property_name)
-    predicate = predicate if predicate is not None else default_predicates[type(current_value)]
-    value_func = value if callable(value) else lambda: value
-
-    if not predicate(current_value):
-        setattr(operator, property_name, value_func())
-
-
 def mkstemp(context, *args, **kwargs):
     return tempfile.mkstemp(
         prefix = __name__ + '-',
@@ -247,8 +234,8 @@ class ApiOperatorMixin:
 
     def invoke(self, context, event):
         prefs_api_root, prefs_api_token = previz_preferences(context)
-        set_property_if_invalid(self, 'api_root', prefs_api_root)
-        set_property_if_invalid(self, 'api_token', prefs_api_token)
+        self.api_root = prefs_api_root
+        self.api_token = prefs_api_token
 
 
 class ObjectModeMixin:
@@ -315,9 +302,9 @@ class PublishScene(bpy.types.Operator, ApiOperatorMixin, ObjectModeMixin):
 
     def invoke(self, context, event):
         ApiOperatorMixin.invoke(self, context, event)
-        set_property_if_invalid(self, 'project_id', active.project(context)['id'])
-        set_property_if_invalid(self, 'scene_id', active.scene(context)['id'])
-        set_property_if_invalid(self, 'debug_export_path', lambda: mkstemp(context, suffix='.json')[1])
+        self.project_id = active.project(context)['id']
+        self.scene_id = active.scene(context)['id']
+        self.debug_export_path = mkstemp(context, suffix='.json')[1]
         return self.execute(context)
 
 
@@ -401,7 +388,7 @@ class CreateProject(bpy.types.Operator, ApiOperatorMixin):
 
     def invoke(self, context, event):
         ApiOperatorMixin.invoke(self, context, event)
-        set_property_if_invalid(self, 'team_id', lambda: active.team(context)['id'])
+        self.team_id = active.team(context)['id']
         return context.window_manager.invoke_props_dialog(self)
 
 
@@ -436,7 +423,7 @@ class CreateScene(bpy.types.Operator, ApiOperatorMixin):
 
     def invoke(self, context, event):
         ApiOperatorMixin.invoke(self, context, event)
-        set_property_if_invalid(self, 'project_id', lambda: active.project(context)['id'])
+        self.project_id = active.project(context)['id']
         return context.window_manager.invoke_props_dialog(self)
 
 
