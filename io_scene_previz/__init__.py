@@ -441,7 +441,8 @@ class PrevizPreferences(bpy.types.AddonPreferences):
     )
 
     api_token = StringProperty(
-        name='API token'
+        name='API token',
+        subtype='PASSWORD'
     )
 
     def draw(self, context):
