@@ -35,7 +35,7 @@ from . import utils
 bl_info = {
     'name': "Previz integration",
     'author': "Previz (info@previz.co)",
-    'version': (1, 2, 1),
+    'version': (1, 2, 2),
     'blender': (2, 76, 0),
     'location': "File > Export",
     'description': "Upload scenes to Previz.",
