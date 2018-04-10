@@ -1,3 +1,4 @@
+from .config import *
 from contextlib import contextmanager
 from functools import wraps
 import json
@@ -7,19 +8,9 @@ import random
 import shutil
 import string
 import tempfile
-
 import bpy
-
 import io_scene_previz
-
-BLENDS_DIR_NAME = 'blends'
-
-PREVIZ_API_ROOT_ENVVAR = 'PREVIZ_API_ROOT'
-PREVIZ_API_TOKEN_ENVVAR = 'PREVIZ_API_TOKEN'
-PREVIZ_TEAM_UUID_ENVVAR= 'PREVIZ_TEAM_UUID'
-
 from previz import PrevizProject
-
 
 
 class ApiDecorators(object):
@@ -132,9 +123,9 @@ class MakeTempDirectories(object):
 
 
 def build_api_decorators():
-    return ApiDecorators(os.environ[PREVIZ_API_TOKEN_ENVVAR],
-                         os.environ[PREVIZ_API_ROOT_ENVVAR],
-                         os.environ[PREVIZ_TEAM_UUID_ENVVAR])
+    return ApiDecorators(os.environ[ENV_PREVIZ_API_TOKEN],
+                         os.environ[ENV_PREVIZ_API_ROOT],
+                         os.environ[ENV_PREVIZ_TEAM_UUID])
 
 
 def scene(name):
@@ -150,8 +141,8 @@ def scene(name):
 
             # Set API token
             prefs = bpy.context.user_preferences.addons[io_scene_previz.__name__].preferences
-            prefs.api_root = os.environ[PREVIZ_API_ROOT_ENVVAR]
-            prefs.api_token = os.environ[PREVIZ_API_TOKEN_ENVVAR]
+            prefs.api_root = os.environ[ENV_PREVIZ_API_ROOT]
+            prefs.api_token = os.environ[ENV_PREVIZ_API_TOKEN]
 
             # Run test
             kwargs['scenepath'] = scenepath
