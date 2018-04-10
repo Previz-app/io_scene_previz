@@ -66,7 +66,7 @@ Refer to `the Blender path layout documentation <https://docs.blender.org/manual
 ^^^^^^^^^^^^^^^^^^^
 Activate the add-on
 ^^^^^^^^^^^^^^^^^^^
-Finally, you need to activate the add-on.
+Now it's time to activate the add-on within Blender.
 
 Before you begin, ensure that you're using the correct virtual environment:
 
@@ -90,20 +90,42 @@ Now you can launch Blender from the command line:
 
 Switch to the Blender application, and open "User Preferences". Select the "Add-ons" tab, and search for "Previz". Check the box to activate the add-on.
 
------------
-Development
------------
-Additional configuration required in order to actually write some code.
-
 -------
 Testing
 -------
-Instructions on how to run the tests go here...
+Before you can run the tests, you need to do a bit more set-up (this is in addition to the general `Getting Started`_ instructions).
 
------------------------
-Releasing a new version
------------------------
-Pretty sure we're the only people who can do this, so it shouldn't be in the public README.
+^^^^^^^^^^^^^^^^^^^^^^^^
+Add Blender to your path
+^^^^^^^^^^^^^^^^^^^^^^^^
+If you're running macOS, you need to add Blender to your path. Here's now to do that:
+
+.. code-block:: sh
+
+    $ export PATH="/Applications/Blender/blender.app/Contents/MacOS:$PATH"
+
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Activate the virtual environment
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+As ever, you must ensure that everything run from within your ``previz-blender`` virtual environment:
+
+.. code-block:: sh
+
+    $ pyenv activate previz-blender
+
+If you forget to do this, the test suite with helpfully inform you of your error.
+
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Set the environment variables
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+The test suite depends on a number of environment variables. Configure them as follows:
+
+1. Copy ``tests/.env.example``, and name it ``tests/.env``.
+2. Set the variable values in your new ``.env`` file. Each variable is clearly documented.
+
+Once again, if you forget to set your environment variables, the test suite will display an informative error message.
+
+----
 
 .. [#] In summary, you should be using `pyenv` to manage your Python versions, and `pyenv-virtualenv` to manage your project dependencies.
 .. [#] You can get away with a different patch number, as long as the major and minor version numbers are correct

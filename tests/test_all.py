@@ -1,33 +1,20 @@
-import datetime
-import itertools
-import time
 import unittest
-
-import addon_utils
 import bpy
 import mathutils
-
-import io_scene_previz
 from io_scene_previz import *
-from io_scene_previz.tasks import *
-from io_scene_previz.utils import *
 from io_scene_previz.three_js_exporter import *
-
 from .tasks import *
 from .utils import *
 
 bpy.ops.wm.addon_enable(module=io_scene_previz.__name__)
 
-EXPORT_DIRNAME = 'export_tmpdir'
-
-mkdtemp = MakeTempDirectories(io_scene_previz.__name__+'-unittests')
-
+mkdtemp = MakeTempDirectories(io_scene_previz.__name__ + '-unittests')
 apidecs = build_api_decorators()
 
 
 def wait_for_queue_to_finish(sleep_time=.1):
     while bpy.ops.export_scene.previz_manage_queue() == {'CANCELLED'}:
-            time.sleep(sleep_time)
+        time.sleep(sleep_time)
 
 
 class TestUnittestFramework(unittest.TestCase):
@@ -63,7 +50,6 @@ class TestOperators(unittest.TestCase):
 
         self.assertEqual(task.status, DONE)
 
-
     def test_previz_cancel_task(self):
         task = TestTask(timeout=10)
         task_id = io_scene_previz.tasks_runner.add_task(bpy.context, task)
@@ -77,17 +63,16 @@ class TestOperators(unittest.TestCase):
 
         self.assertEqual(task.status, CANCELED)
 
-
     def test_previz_remove_task(self):
         task = TestTask(timeout=.1)
         task_id = io_scene_previz.tasks_runner.add_task(bpy.context, task)
 
         # XXX How to catch an Exception in an Operator ?
-        #self.assertRaises(
-            #RuntimeError,
-            #bpy.ops.export_scene.previz_remove_task,
-            #task_id=task_id
-        #)
+        # self.assertRaises(
+        # RuntimeError,
+        # bpy.ops.export_scene.previz_remove_task,
+        # task_id=task_id
+        # )
 
         time.sleep(.2)
         io_scene_previz.tasks_runner.tick(bpy.context)
@@ -99,7 +84,6 @@ class TestOperators(unittest.TestCase):
         )
 
         self.assertTrue(io_scene_previz.tasks_runner.is_empty)
-
 
     def test_previz_show_task_error(self):
         task = TestTask(raise_timeout=.1)
@@ -114,7 +98,6 @@ class TestOperators(unittest.TestCase):
             bpy.ops.export_scene.previz_show_task_error,
             task_id=task_id
         )
-
 
     @apidecs.tempproject
     @apidecs.tempscene
@@ -136,10 +119,9 @@ class TestOperators(unittest.TestCase):
             scene['id']
         )
 
-
     @apidecs.credentials
     @apidecs.get_team_id
-    def test_previz_new_project(self, api_root,  api_token, team_id):
+    def test_previz_new_project(self, api_root, api_token, team_id):
         project_name = datetime.datetime.now().isoformat()
         bpy.ops.export_scene.previz_new_project(
             api_root=api_root,
@@ -154,7 +136,6 @@ class TestOperators(unittest.TestCase):
         self.assertEqual(project['title'], project_name)
 
         PrevizProject(api_root, api_token, project['id']).delete_project()
-
 
     @apidecs.tempproject
     @apidecs.credentials
@@ -174,7 +155,6 @@ class TestOperators(unittest.TestCase):
 
         PrevizProject(api_root, api_token, project['id']).delete_scene(scene['id'])
 
-
     # XXX Doesn't actually test much here as the API wrapper does not allow
     # to retrieve a scene file yet
     @apidecs.credentials
@@ -183,7 +163,7 @@ class TestOperators(unittest.TestCase):
     @scene('test_exporter.blend')
     @mkdtemp
     def test_previz_publish_scene(self, api_root, api_token, project, scene, scenepath, tmpdir):
-        debug_export_path = tmpdir/'export.json'
+        debug_export_path = tmpdir / 'export.json'
         self.assertEqual(
             bpy.ops.export_scene.previz_publish_scene(
                 api_root=api_root,
@@ -198,11 +178,10 @@ class TestOperators(unittest.TestCase):
 
         wait_for_queue_to_finish()
 
-
     @scene('test_exporter.blend')
     @mkdtemp
     def test_previz_export_scene(self, tmpdir, scenepath):
-        filepath = tmpdir/'export.json'
+        filepath = tmpdir / 'export.json'
         self.assertEqual(
             bpy.ops.export_scene.previz_export_scene(filepath=str(filepath)),
             {'FINISHED'}
