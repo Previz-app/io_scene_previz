@@ -1,11 +1,10 @@
+import bpy
+import platform
+import previz
 import queue
 import sys
-import time
 import threading
-
-import previz
-
-from . import three_js_exporter # TODO shouldn't be a task
+import time
 
 
 def id_generator():
@@ -187,9 +186,18 @@ class RefreshAllTask(Task):
 
     @staticmethod
     def thread_run(queue_to_worker, queue_to_main, api_root, api_token, version_string):
-        try:
-            p = previz.PrevizProject(api_root, api_token)
+        p = previz.PrevizProject(api_root, api_token)
 
+        p.custom_headers = {
+            'X-PREVIZ-PLUGIN-NAME': 'io_scene_blender',
+            'X-PREVIZ-PLUGIN-VERSION': '1.2.1',
+            'X-PREVIZ-PLATFORM-NAME': 'Blender',
+            'X-PREVIZ-PLATFORM-VERSION': bpy.app.version_string,
+            'X-PREVIZ-OS-NAME': platform.system(),
+            'X-PREVIZ-OS-VERSION': platform.release(),
+        }
+
+        try:
             data = ('get_all', p.get_all())
             msg = (TASK_UPDATE, data)
             queue_to_main.put(msg)
