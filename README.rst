@@ -1,10 +1,9 @@
 ==========================
-Previz Blender integration
+Previz :: Blender Plugin
 ==========================
 
-This README contains instructions for contributing to the development of the Previz Blender plugin.
+**This README contains instructions for development of the Previz Blender plugin. If you're interested in simply _using_ the Blender plugin, download the lastest release here: <https://github.com/Previz-app/io_scene_previz/releases/tag/v1.2.2>**
 
-If you simply want to use this plugin with Blender, you can ignore the contents of this README, and download `the latest release <https://github.com/Previz-app/io_scene_previz/releases/tag/v1.2.2>`_.
 
 ---------------
 Getting started
@@ -126,6 +125,29 @@ The test suite depends on a number of environment variables. Configure them as f
 Once again, if you forget to set your environment variables, the test suite will display an informative error message.
 
 ----
+
+## Building a Release 
+
+`setup.py` defines a `bdist_blender_addon` command that build an addon archive in the `dist` directory.
+
+```sh
+# Build from a clean virtual env
+$ pyvenv-3.5 env
+$ source env/bin/activate
+
+# Install the dependencies
+(env) $ pip install -r requirements.txt
+
+# Run [bumpversion](https://github.com/peritus/bumpversion) to update release version
+# This will add a new git tag and will commit the new version
+# Version types are: major, minor, patch
+(env) $ bumpversion patch
+
+# Build the addon archive
+(env) $ python setup.py bdist_blender_addon
+(env) $ ls dist
+
+---
 
 .. [#] In summary, you should be using `pyenv` to manage your Python versions, and `pyenv-virtualenv` to manage your project dependencies.
 .. [#] You can get away with a different patch number, as long as the major and minor version numbers are correct
