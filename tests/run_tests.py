@@ -3,56 +3,80 @@ from pathlib import Path
 import sys
 
 
-# Add path for modules installed by pip
+def build_error_message(message):
+    """Construct an error string using the given message"""
+    return '\n'.join(['\n', 78 * '*', message, 78 * '*', '\n'])
 
-if 'VIRTUAL_ENV' in os.environ:
+
+def load_environment_variables():
+    """Load environment variables from the .env file"""
+    from dotenv import load_dotenv
+
+    env_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), '.env')
+    load_dotenv(dotenv_path=env_path)
+
+
+def is_virtual_env():
+    """Are we running in a virtual environment?"""
+    return len(os.environ.get('VIRTUAL_ENV', '')) > 0
+
+
+def environment_is_valid():
+    """Are all of the required environment variables set?"""
+
+    def envvar_is_set(envvar):
+        """Does the environment variable with the given name exist?"""
+        return len(os.environ.get(envvar, '')) > 0
+
+    return envvar_is_set(ENV_PREVIZ_API_ROOT) \
+           and envvar_is_set(ENV_PREVIZ_TEAM_UUID) \
+           and envvar_is_set(ENV_PREVIZ_API_TOKEN) \
+           and envvar_is_set('VIRTUAL_ENV')
+
+
+def bootstrap_packages():
+    """Append the virtual environment packages to the system path"""
     major, minor = sys.version_info.major, sys.version_info.minor
     python = 'python{major}.{minor}'.format(major=major, minor=minor)
     envroot = Path(os.environ['VIRTUAL_ENV'])
     env_site_packages = envroot / 'lib' / python / 'site-packages'
     sys.path.append(str(env_site_packages))
 
-import coverage
-import nose
-
-
-# Add blender repo path for tests module
-
-blender_addon_repo_root_path = str(Path(__file__).parent.parent)
-sys.path.append(blender_addon_repo_root_path)
-
-from tests import PREVIZ_API_ROOT_ENVVAR, PREVIZ_API_TOKEN_ENVVAR
-
-
-def error_message():
-    return '\n'.join(
-        [
-            '\n',
-            78*'*',
-            'Testing environment not set. Set the variables :',
-            '\t- {}'.format(PREVIZ_API_ROOT_ENVVAR),
-            '\t- {}'.format(PREVIZ_API_TOKEN_ENVVAR),
-            78*'*',
-            '\n'
-        ]
-    )
-
-def is_environment_valid():
-    def envvar_is_valid(envvar):
-        return len(os.environ.get(envvar, '')) > 0
-    
-    return envvar_is_valid(PREVIZ_API_ROOT_ENVVAR) \
-       and envvar_is_valid(PREVIZ_API_TOKEN_ENVVAR)
 
 def main():
+    """Run the test suite"""
+    import coverage
+    import nose
+
     cov = coverage.coverage()
     cov.start()
     nose.run(argv=[__file__, '--verbosity=2'])
     cov.stop()
     cov.save()
 
+
 if __name__ == '__main__':
-    if not is_environment_valid():
-        print(error_message())
+    # Python package importing is appalling.
+    # @see https://stackoverflow.com/questions/11536764/how-to-fix-attempted-relative-import-in-non-package-even-with-init-py
+    if __package__ is None:
+        sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+    # It is now safe to assume that Python can find the ``tests`` package
+    from tests import ENV_PREVIZ_API_ROOT, ENV_PREVIZ_API_TOKEN, ENV_PREVIZ_TEAM_UUID
+
+    # No point proceeding if we're not running from within a virtual environment, as per the docs
+    if not is_virtual_env():
+        message = 'You must run this script from a virtual environment.\nSee the README for instructions.'
+        print(build_error_message(message))
         raise EnvironmentError
+
+    bootstrap_packages()
+    load_environment_variables()
+
+    if not environment_is_valid():
+        message = 'Environment variables not configured.\nSee the README for instructions.'
+        print(build_error_message(message))
+        raise EnvironmentError
+
+    # Finally, we can run the tests
     main()

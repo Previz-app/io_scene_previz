@@ -3,6 +3,7 @@ coverage
 nose
 previz
 pyperclip
+python-dotenv
 tox
 wheel
 
