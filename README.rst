@@ -136,6 +136,7 @@ Building a Release
 `setup.py` defines a `bdist_blender_addon` command that build an addon archive in the `dist` directory.
 
 .. code-block:: sh
+
     # Build from a clean virtual env
     $ pyvenv-3.5 env
     $ source env/bin/activate
