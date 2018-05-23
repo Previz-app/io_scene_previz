@@ -2,7 +2,9 @@
 Previz :: Blender Plugin
 ==========================
 
-**This README contains instructions for development of the Previz Blender plugin. If you're interested in simply _using_ the Blender plugin, download the lastest release here: <https://github.com/Previz-app/io_scene_previz/releases/tag/v1.2.2>**
+**This README contains instructions for development of the Previz Blender plugin.**
+
+If you're interested in simply using the Blender plugin, download `the lastest release <https://github.com/Previz-app/io_scene_previz/releases/tag/v1.2.2>`_.
 
 
 ---------------
@@ -126,26 +128,29 @@ Once again, if you forget to set your environment variables, the test suite will
 
 ----
 
-## Building a Release 
+-------
+Building a Release 
+-------
+
 
 `setup.py` defines a `bdist_blender_addon` command that build an addon archive in the `dist` directory.
 
-```sh
-# Build from a clean virtual env
-$ pyvenv-3.5 env
-$ source env/bin/activate
+.. code-block:: sh
+    # Build from a clean virtual env
+    $ pyvenv-3.5 env
+    $ source env/bin/activate
 
-# Install the dependencies
-(env) $ pip install -r requirements.txt
+    # Install the dependencies
+    (env) $ pip install -r requirements.txt
 
-# Run [bumpversion](https://github.com/peritus/bumpversion) to update release version
-# This will add a new git tag and will commit the new version
-# Version types are: major, minor, patch
-(env) $ bumpversion patch
+    # Run [bumpversion](https://github.com/peritus/bumpversion) to update release version
+    # This will add a new git tag and will commit the new version
+    # Version types are: major, minor, patch
+    (env) $ bumpversion patch
 
-# Build the addon archive
-(env) $ python setup.py bdist_blender_addon
-(env) $ ls dist
+    # Build the addon archive
+    (env) $ python setup.py bdist_blender_addon
+    (env) $ ls dist
 
 ---
 
