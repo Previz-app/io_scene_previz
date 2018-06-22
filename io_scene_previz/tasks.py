@@ -192,9 +192,9 @@ class RefreshAllTask(Task):
             'X-PREVIZ-PLUGIN-NAME': 'io_scene_blender',
             'X-PREVIZ-PLUGIN-VERSION': '1.2.1',
             'X-PREVIZ-PLATFORM-NAME': 'Blender',
-            'X-PREVIZ-PLATFORM-VERSION': bpy.app.version_string,
-            'X-PREVIZ-OS-NAME': platform.system(),
-            'X-PREVIZ-OS-VERSION': platform.release(),
+            'X-PREVIZ-PLATFORM-VERSION': str(bpy.app.version_string),
+            'X-PREVIZ-OS-NAME': str(platform.system()),
+            'X-PREVIZ-OS-VERSION': str(platform.release()),
         }
 
         try:
