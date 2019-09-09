@@ -53,7 +53,7 @@ def color2threejs(color):
 
 def parse_mesh(blender_object):
     name = blender_object.name
-    world_matrix = (AXIS_CONVERSION * blender_object.matrix_world).transposed()
+    world_matrix = (AXIS_CONVERSION @ blender_object.matrix_world).transposed()
     
     geometry_name, faces, vertices, uvsets = parse_geometry(blender_object.data)
     
