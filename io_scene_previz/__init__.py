@@ -604,21 +604,27 @@ def menu_export(self, context):
 # TODO To be activated when API endpoint back in API v2
 #def menu_image_upload(self, context):
     #self.layout.operator(UploadImage.bl_idname, text="Upload image to Previz")
-
+classes = (
+    PrevizPreferences,
+    PrevizPanel,
+    ExportScene,
+)
 
 def register():
     register_tasks_runner()
 
-    bpy.utils.register_module(__name__)
+    for cls in classes:
+        bpy.utils.register_class(cls)
 
-    bpy.types.INFO_MT_file_export.append(menu_export)
-    #bpy.types.IMAGE_MT_image.append(menu_image_upload)
+    bpy.types.TOPBAR_MT_file_export.append(menu_export)
+
 
 
 def unregister():
-    bpy.types.INFO_MT_file_export.remove(menu_export)
-    #bpy.types.IMAGE_MT_image.remove(menu_image_upload)
+    for cls in classes:
+        bpy.utils.unregister_class(cls)
 
-    bpy.utils.unregister_module(__name__)
+    bpy.types.TOPBAR_MT_file_export.remove(menu_export)
+    #bpy.types.IMAGE_MT_image.remove(menu_image_upload)
 
     unregister_tasks_runner()
