@@ -140,7 +140,7 @@ def scene(name):
                                      load_ui=False)  # load_ui=True crashes blender in --background mode
 
             # Set API token
-            prefs = bpy.context.user_preferences.addons[io_scene_previz.__name__].preferences
+            prefs = bpy.context.preferences.addons[io_scene_previz.__name__].preferences
             prefs.api_root = os.environ[ENV_PREVIZ_API_ROOT]
             prefs.api_token = os.environ[ENV_PREVIZ_API_TOKEN]
 
