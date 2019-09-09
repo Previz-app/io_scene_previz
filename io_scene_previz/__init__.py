@@ -125,7 +125,7 @@ class CancelTask(bpy.types.Operator):
     bl_idname = 'export_scene.previz_cancel_task'
     bl_label = 'Cancel Previz task'
 
-    task_id = IntProperty(
+    task_id : IntProperty(
         name = 'Task ID',
         default = -1
     )
@@ -139,7 +139,7 @@ class RemoveTask(bpy.types.Operator):
     bl_idname = 'export_scene.previz_remove_task'
     bl_label = 'Remove Previz task'
 
-    task_id = IntProperty(
+    task_id : IntProperty(
         name = 'Task ID',
         default = -1
     )
@@ -153,7 +153,7 @@ class ShowTaskError(bpy.types.Operator):
     bl_idname = 'export_scene.previz_show_task_error'
     bl_label = 'Show Previz task error'
 
-    task_id = IntProperty(
+    task_id : IntProperty(
         name = 'Task ID',
         default = -1
     )
@@ -217,7 +217,7 @@ Please paste it to Previz support.
 def mkstemp(context, *args, **kwargs):
     return tempfile.mkstemp(
         prefix = __name__ + '-',
-        dir = context.user_preferences.filepaths.temporary_directory,
+        dir = context.preferences.filepaths.temporary_directory,
         *args,
         **kwargs
     )
@@ -250,21 +250,21 @@ class PublishScene(bpy.types.Operator, ApiOperatorMixin, ObjectModeMixin):
     bl_idname = 'export_scene.previz_publish_scene'
     bl_label = 'Export scene to Previz'
 
-    project_id = StringProperty(
+    project_id : StringProperty(
         name='Previz project ID'
     )
 
-    scene_id = StringProperty(
+    scene_id : StringProperty(
         name='Previz scene ID',
     )
 
-    debug_cleanup = BoolProperty(
+    debug_cleanup : BoolProperty(
         name='Cleanup temporary folder',
         default=True,
         options={'HIDDEN'}
     )
 
-    debug_export_path = StringProperty(
+    debug_export_path : StringProperty(
         name='Force export path',
         options={'HIDDEN'}
     )
@@ -315,7 +315,7 @@ class ExportScene(bpy.types.Operator, ExportHelper, ObjectModeMixin):
     bl_label = 'Export scene to a Previz file'
 
     filename_ext = ".json"
-    filter_glob = StringProperty(
+    filter_glob : StringProperty(
         default="*.json;",
         options={'HIDDEN'},
     )
@@ -363,11 +363,11 @@ class CreateProject(bpy.types.Operator, ApiOperatorMixin):
     bl_idname = 'export_scene.previz_new_project'
     bl_label = 'New Previz project'
 
-    project_name = StringProperty(
+    project_name : StringProperty(
         name='Project name'
     )
 
-    team_id = StringProperty(
+    team_id : StringProperty(
         name='Team UUID',
         options={'HIDDEN'}
     )
@@ -398,11 +398,11 @@ class CreateScene(bpy.types.Operator, ApiOperatorMixin):
     bl_idname = 'export_scene.previz_new_scene'
     bl_label = 'New Previz scene'
 
-    scene_name = StringProperty(
+    scene_name : StringProperty(
         name='Scene name'
     )
 
-    project_id = StringProperty(
+    project_id : StringProperty(
         name='Project UUID',
         options={'HIDDEN'}
     )
@@ -437,12 +437,12 @@ class CreateScene(bpy.types.Operator, ApiOperatorMixin):
 class PrevizPreferences(bpy.types.AddonPreferences):
     bl_idname = __name__
 
-    api_root = StringProperty(
+    api_root : StringProperty(
         name='API root',
         default='https://app.previz.co/api'
     )
 
-    api_token = StringProperty(
+    api_token : StringProperty(
         name='API token',
         subtype='PASSWORD'
     )
@@ -461,7 +461,7 @@ class PrevizPreferences(bpy.types.AddonPreferences):
 
 
 def previz_preferences(context):
-    prefs = context.user_preferences.addons[__name__].preferences
+    prefs = context.preferences.addons[__name__].preferences
     return prefs.api_root, prefs.api_token
 
 
@@ -476,19 +476,19 @@ class PrevizPanel(bpy.types.Panel):
     bl_region_type = "WINDOW"
     bl_context = "scene"
 
-    bpy.types.Scene.previz_active_team_id = EnumProperty(
+    bpy.types.Scene.previz_active_team_id : EnumProperty(
         name='Team',
         items=active.team_menu_items(),
         update=active.team_menu_update()
     )
 
-    bpy.types.Scene.previz_active_project_id = EnumProperty(
+    bpy.types.Scene.previz_active_project_id : EnumProperty(
         name='Project',
         items=active.project_menu_items(),
         update=active.project_menu_update()
     )
 
-    bpy.types.Scene.previz_active_scene_id = EnumProperty(
+    bpy.types.Scene.previz_active_scene_id : EnumProperty(
         name='Scene',
         items=active.scene_menu_items(),
         update=active.scene_menu_update()
