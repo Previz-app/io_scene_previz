@@ -35,11 +35,13 @@ from . import utils
 bl_info = {
     'name': "Previz integration",
     'author': "Previz (info@previz.co)",
-    'version': (1, 2, 1),
-    'blender': (2, 76, 0),
+    'version': (1, 5, 3),
+    'blender': (2, 80, 0),
     'location': "File > Export",
     'description': "Upload scenes to Previz.",
     'category': 'Import-Export',
+    'wiki_url': 'https://somepath.com/path',
+    'tracker_url': 'https://someother.com/path'
 }
 
 version_string = '.'.join([str(x) for x in bl_info['version']])
