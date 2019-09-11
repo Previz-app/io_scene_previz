@@ -311,6 +311,7 @@ class PublishScene(bpy.types.Operator, ApiOperatorMixin, ObjectModeMixin):
 
 
 class ExportScene(bpy.types.Operator, ExportHelper, ObjectModeMixin):
+    '''Export scene to a Previz (.json) format file'''
     bl_idname = 'export_scene.previz_export_scene'
     bl_label = 'Export scene to a Previz file'
 
