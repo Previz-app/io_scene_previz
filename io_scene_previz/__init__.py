@@ -113,7 +113,7 @@ class ManageQueue(bpy.types.Operator):
 
     def register_timer(self, context):
         if self.timer is None:
-            self.timer = context.window_manager.event_timer_add(self.process_polling_interval, context.window)
+            self.timer = context.window_manager.event_timer_add(self.process_polling_interval, window=context.window)
 
     def unregister_timer(self, context):
         if self.timer is not None:
@@ -452,8 +452,10 @@ class PrevizPreferences(bpy.types.AddonPreferences):
 
         layout.prop(self, 'api_root')
 
-        row = layout.split(percentage=.9, align=False)
-        row.prop(self, 'api_token')
+        # row = layout.split(percentage=.9, align=False)
+        # row.prop(self, 'api_token')
+
+        layout.prop(self, 'api_token')
 
         op = layout.operator('wm.url_open', text="Tokens", icon='URL')
         # Should be dynamic, depending on api_root
@@ -498,9 +500,12 @@ class PrevizPanel(bpy.types.Panel):
         api_root, api_token = previz_preferences(context)
 
         if len(api_root) == 0 or len(api_token) == 0:
-            self.layout.label('Set the API info in the User Preferences.')
-            self.layout.label('Search Previz in the Add-ons tab.')
-            self.layout.operator('screen.userpref_show')
+            self.layout.label(
+                text='Set the API info in the User Preferences.')
+            self.layout.label(
+                text='Search Previz in the Add-ons tab.')
+            self.layout.operator(
+                operator='screen.userpref_show')
             return
 
         is_working = not tasks_runner.is_finished
@@ -513,26 +518,33 @@ class PrevizPanel(bpy.types.Panel):
             row.prop(context.scene, 'previz_active_team_id')
 
             row = self.layout.row()
-            row.prop(context.scene, 'previz_active_project_id')
-            row.operator('export_scene.previz_new_project', text='', icon='NEW')
+            # row.prop(context.scene, 'previz_active_project_id')
+            row.operator(
+                operator='export_scene.previz_new_project', 
+                text='New Project', 
+                icon='ADD')
             row.enabled = not is_working and is_team_valid
 
             row = self.layout.row()
-            row.prop(context.scene, 'previz_active_scene_id')
-            row.operator('export_scene.previz_new_scene', text='', icon='NEW')
+            # row.prop(context.scene, 'previz_active_scene_id')
+            row.operator(
+                operator='export_scene.previz_new_scene', 
+                text='New Scene', 
+                icon='ADD')
             row.enabled = not is_working and is_project_valid
 
             row = self.layout.row()
             row.operator(
-                'export_scene.previz_publish_scene',
+                operator='export_scene.previz_publish_scene',
                 text='Publish scene',
                 icon='EXPORT'
             )
             row.enabled = not is_working and is_scene_valid
 
+
         row = self.layout.row()
         row.operator(
-            'export_scene.previz_refresh',
+            operator='export_scene.previz_refresh',
             text='Refresh',
             icon='FILE_REFRESH'
         )
@@ -548,24 +560,26 @@ class PrevizPanel(bpy.types.Panel):
             label = '{} ({})'.format(task.label, task.state)
             if task.progress is not None:
                 label += ' {:.0f}%'.format(task.progress*100)
-            row.label(label, icon='RIGHTARROW_THIN')
+            row.label(
+                text=label, 
+                icon='RIGHTARROW_THIN')
 
             if task.status == tasks.ERROR:
                 row.operator(
-                    'export_scene.previz_show_task_error',
+                    operator='export_scene.previz_show_task_error',
                     text='',
                     icon='ERROR').task_id = id
 
             if task.is_cancelable and not task.is_finished:
                 row.operator(
-                    'export_scene.previz_cancel_task',
+                    operator='export_scene.previz_cancel_task',
                     text='',
                     icon='CANCEL').task_id = id
 
             if task.is_finished:
                 icon = 'FILE_TICK' if task.status == tasks.DONE else 'X'
                 row.operator(
-                    'export_scene.previz_remove_task',
+                    operator='export_scene.previz_remove_task',
                     text='',
                     icon=icon).task_id = id
 
@@ -598,16 +612,27 @@ def unregister_tasks_runner():
 
 
 def menu_export(self, context):
-    self.layout.operator(ExportScene.bl_idname, text="Previz (three.js .json)")
+    self.layout.operator(ExportScene.bl_idname, text="Previz (.json)")
 
 
 # TODO To be activated when API endpoint back in API v2
-#def menu_image_upload(self, context):
-    #self.layout.operator(UploadImage.bl_idname, text="Upload image to Previz")
+# def menu_image_upload(self, context):
+#     self.layout.operator(UploadImage.bl_idname, text="Upload image to Previz")
+
 classes = (
-    PrevizPreferences,
-    PrevizPanel,
+    # PrevizPreferences,
+    # PrevizPanel,
     ExportScene,
+    
+    # RefreshProjects,
+    # PublishScene,
+    # CreateProject,
+    # CreateScene,
+
+    # ManageQueue,
+    # CancelTask,
+    # RemoveTask,
+    # ShowTaskError
 )
 
 def register():
@@ -618,13 +643,10 @@ def register():
 
     bpy.types.TOPBAR_MT_file_export.append(menu_export)
 
-
-
 def unregister():
     for cls in classes:
         bpy.utils.unregister_class(cls)
 
     bpy.types.TOPBAR_MT_file_export.remove(menu_export)
-    #bpy.types.IMAGE_MT_image.remove(menu_image_upload)
 
     unregister_tasks_runner()
