@@ -20,9 +20,9 @@ class ThreeJSFaceBuilder(object):
 
     def __call__(self, face):
         yield self.type(face)
-        yield face.vertices
+        yield face
 
-        uv_indices = [next(self.uv_indices) for i in range(len(face.vertices))]
+        uv_indices = [next(self.uv_indices) for i in range(len(face))]
         for i in range(self.uvsets_count):
             yield uv_indices
 
@@ -32,7 +32,7 @@ class ThreeJSFaceBuilder(object):
         See https://github.com/mrdoob/three.js/wiki/JSON-Model-format-3
         """
         has_uvsets = self.uvsets_count > 0
-        is_quad = len(face.vertices) == 4
+        is_quad = len(face) == 4
         return (int(is_quad) << 0) + (int(has_uvsets) << 3 )
 
 
@@ -64,29 +64,49 @@ def parse_mesh(blender_object):
                        vertices,
                        uvsets)
 
-
 def parse_geometry(blender_geometry):
     g = blender_geometry
-    
-    g.calc_tessface()
+    # All face geometry in 2.8 is defined as loop triangles
+    g.calc_loop_triangles()
 
+    # Count the vertices in our geom, and figure out how many uv sets we need to keep three happy
     vertices = (v.co for v in g.vertices)
     vertices_count = len(g.vertices)
+    uvsets_count = len(g.uv_layers)
+    uvsets = list(build_uvset(uvset) for uvset in g.uv_layers)
 
-    uvsets_count = len(g.tessface_uv_textures)
-    uvsets = list(build_uvset(uvset) for uvset in g.tessface_uv_textures)
-
+    # Set our base builder with the uv sets to build
     three_js_face = ThreeJSFaceBuilder(uvsets_count)
-    faces = (three_js_face(face) for face in g.tessfaces)
-    faces_count = len(g.tessfaces)
+
+    # This gets dark
+    # We need to loop over the triangles of the faces,
+    # BUT the way we handle uv mapping internally in the dag relies on 
+    # all the faces being defined as quads 
+    # So we'll first want to convert these triangles into Quads 
+    # Consequtive triangles in the set are paired, and can be merged into a single quad
+    # We loop through the triangles in sets of 2, then get the unqiue vertex points from the 
+    # 6 points (a[0], a[1], a[2] + b[0], b[1], b[2]) to turn into q[0],q[1],q[2],q[3]
+    # Then pass that quad over to the three_js_face logic to turn it into the format threejs wants
+    faces = []
+    iterable = iter(g.loop_triangles)
+    for item in iterable:
+        # Get the triangles 2 at a time 
+        first =  list(item.vertices)
+        second = list(next(iterable).vertices)
+
+        # Take all the vertexes in the first, then only the unique point from the second
+        quadface = first + [vertex for vertex in second if vertex not in first]
+
+        # Convert this quad for the threejs format, and append to our faces array
+        faces.extend(three_js_face(quadface))
 
     return g.name, faces, vertices, uvsets
 
 
-def horizon_color(context):
+def world_color(context):
     if context.scene.world == None:
         return None
-    return color2threejs(context.scene.world.horizon_color)
+    return color2threejs(context.scene.world.color)
 
 
 def exportable_objects(context):
@@ -101,5 +121,5 @@ def build_objects(context):
 def build_scene(context):
     return previz.Scene(generator,
                         pathlib.Path(bpy.data.filepath).name,
-                        horizon_color(context),
+                        world_color(context),
                         build_objects(context))
